@@ -451,8 +451,8 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-cover relative overflow-hidden overscroll-none" style={getWallpaperStyle(wallpaper)}>
-      <div className="sticky top-0 z-[30] flex-shrink-0">
+    <div className="flex flex-col w-full h-full bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
+      <div className="z-[30] flex-shrink-0">
         <ChatHeader
           receiver={receiver}
           roomId={selectedRoom || ""}
