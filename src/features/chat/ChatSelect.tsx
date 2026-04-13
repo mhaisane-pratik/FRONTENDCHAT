@@ -31,21 +31,31 @@ export default function ChatSelect() {
   const loadChatRooms = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/chats/user/${currentUser?.mobile}/rooms`);
+      if (!currentUser?.mobile) {
+        setChatRooms([]);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/chats/rooms/${encodeURIComponent(currentUser.mobile)}`);
       if (response.ok) {
         const rooms = await response.json();
         const formattedRooms = await Promise.all(
           rooms.map(async (room: any) => {
-            const otherParticipant = room.participants.find(
-              (p: string) => p !== currentUser?.mobile
-            );
+            const participants = Array.isArray(room.participants)
+              ? room.participants
+              : [room.participant_1, room.participant_2].filter(Boolean);
+            const otherParticipant =
+              room.other_user ||
+              room.otherParticipant ||
+              participants.find((p: string) => p !== currentUser?.mobile) ||
+              "Unknown";
             await loadUserProfile(otherParticipant);
             return {
-              roomId: room.roomId,
+              roomId: room.roomId || room.id,
               otherParticipant,
-              lastMessage: room.lastMessage,
-              timestamp: room.timestamp,
-              unread: room.unread || 0,
+              lastMessage: room.lastMessage || room.last_message,
+              timestamp: room.timestamp || room.last_message_time,
+              unread: room.unread || room.unread_count || 0,
             };
           })
         );

@@ -40,9 +40,8 @@ export default function ChatLogin() {
     }
   }, [navigate, currentUser]);
 
-  const formatPhone = (phone: string, dialCode: string) => {
-    const onlyDigits = phone.replace(/\D/g, "");
-    return `${dialCode}${onlyDigits}`;
+  const formatPhone = (phone: string) => {
+    return phone.replace(/\D/g, "");
   };
 
   const otpValue = otpDigits.join("");
@@ -76,7 +75,7 @@ export default function ChatLogin() {
     setError("");
 
     try {
-      const formattedPhone = formatPhone(localNumber, countryCode);
+      const formattedPhone = formatPhone(localNumber);
       const res = await fetch(`${API_URL}/api/v1/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

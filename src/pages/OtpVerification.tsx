@@ -43,11 +43,7 @@ export default function ChatLogin() {
 
   /* ================= FORMAT PHONE ================= */
   const formatPhone = (phone: string) => {
-    let cleaned = phone.trim();
-    if (!cleaned.startsWith("+")) {
-      cleaned = `+91${cleaned}`; // default India
-    }
-    return cleaned;
+    return phone.replace(/\D/g, "");
   };
 
   /* ================= mobile/PASSWORD LOGIN ================= */
