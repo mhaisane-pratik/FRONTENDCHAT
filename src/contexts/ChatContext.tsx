@@ -93,15 +93,29 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasInitialized = useRef(false);
 
+  const normalizeMobileKey = (value?: string) => (value || "").replace(/\D/g, "");
+  const getLocalContactsKey = (mobile?: string) => `local_contacts_${normalizeMobileKey(mobile)}`;
+
   const fetchContacts = async () => {
     if (!currentUser) return;
     try {
+      const localRaw = localStorage.getItem(getLocalContactsKey(currentUser.mobile));
+      const localData = localRaw ? (JSON.parse(localRaw) as Array<{ contact_mobile: string; contact_name: string }>) : [];
+
       const res = await fetch(`${API_URL}/api/v1/contacts/${encodeURIComponent(currentUser.mobile)}`);
       if (res.ok) {
         const data = await res.json();
         const contactMap = new Map<string, string>();
-        data.forEach((c: any) => {
-          contactMap.set(c.contact_mobile, c.contact_name);
+        [...localData, ...(data || [])].forEach((c: any) => {
+          const key = normalizeMobileKey(c.contact_mobile);
+          if (key) contactMap.set(key, c.contact_name);
+        });
+        setContacts(contactMap);
+      } else if (res.status === 404) {
+        const contactMap = new Map<string, string>();
+        localData.forEach((c) => {
+          const key = normalizeMobileKey(c.contact_mobile);
+          if (key) contactMap.set(key, c.contact_name);
         });
         setContacts(contactMap);
       }
@@ -111,8 +125,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getDisplayName = (targetMobile: string, fallback?: string) => {
-    if (contacts.has(targetMobile)) {
-      return contacts.get(targetMobile) as string;
+    const normalizedTarget = normalizeMobileKey(targetMobile);
+    if (contacts.has(normalizedTarget)) {
+      return contacts.get(normalizedTarget) as string;
     }
     // Also try checking the userProfiles for backend display_name
     if (userProfiles.has(targetMobile)) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useChat } from "../../contexts/ChatContext";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import "./MediaViewer.css";
 
 interface MediaViewerProps {
@@ -103,7 +104,7 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
   };
 
   const handleDownload = (mediaItem: MediaFile) => {
-    window.open(mediaItem.file_url, "_blank");
+    window.open(resolveMediaUrl(mediaItem.file_url), "_blank");
   };
 
   const renderContent = () => {
@@ -156,7 +157,7 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
               className="media-item photo-item"
               onClick={() => handleMediaClick(item)}
             >
-              <img src={item.file_url} alt={item.file_name} />
+              <img src={resolveMediaUrl(item.file_url)} alt={item.file_name} />
               <div className="media-overlay">
                 <span className="media-date">{formatDate(item.created_at)}</span>
               </div>
@@ -175,7 +176,7 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
               className="media-item video-item"
               onClick={() => handleMediaClick(item)}
             >
-              <video src={item.file_url} />
+              <video src={resolveMediaUrl(item.file_url)} />
               <div className="video-play-icon">▶️</div>
               <div className="media-overlay">
                 <span className="media-date">{formatDate(item.created_at)}</span>
@@ -274,9 +275,9 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
               ✕
             </button>
             {selectedMedia.message_type === "image" ? (
-              <img src={selectedMedia.file_url} alt={selectedMedia.file_name} />
+              <img src={resolveMediaUrl(selectedMedia.file_url)} alt={selectedMedia.file_name} />
             ) : (
-              <video src={selectedMedia.file_url} controls autoPlay className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" />
+              <video src={resolveMediaUrl(selectedMedia.file_url)} controls autoPlay className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" />
             )}
             <div className="fullscreen-info">
               <div className="fullscreen-details">

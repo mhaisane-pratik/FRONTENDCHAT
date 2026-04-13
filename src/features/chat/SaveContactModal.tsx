@@ -16,6 +16,7 @@ export default function SaveContactModal({ contactUsername, defaultName, onClose
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const API_URL = (import.meta as any).env.VITE_API_URL as string;
+  const normalizeMobileKey = (value?: string) => (value || "").replace(/\D/g, "");
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -41,6 +42,18 @@ export default function SaveContactModal({ contactUsername, defaultName, onClose
       });
 
       if (!res.ok) {
+        if (res.status === 404) {
+          const localKey = `local_contacts_${normalizeMobileKey(currentUser.mobile)}`;
+          const raw = localStorage.getItem(localKey);
+          const contacts = raw ? (JSON.parse(raw) as Array<{ contact_mobile: string; contact_name: string }>) : [];
+          const normalizedContact = normalizeMobileKey(contactUsername);
+          const withoutExisting = contacts.filter((c) => normalizeMobileKey(c.contact_mobile) !== normalizedContact);
+          withoutExisting.push({ contact_mobile: normalizedContact, contact_name: name.trim() });
+          localStorage.setItem(localKey, JSON.stringify(withoutExisting));
+          await fetchContacts();
+          onClose();
+          return;
+        }
         throw new Error("Failed to save contact");
       }
 

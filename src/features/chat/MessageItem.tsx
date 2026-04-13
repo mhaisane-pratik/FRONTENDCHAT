@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Message } from "./ChatWindow";
 import { socket } from "../../api/socket";
 import { useChat } from "../../contexts/ChatContext";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 interface MessageItemProps {
   message: Message;
@@ -161,6 +162,8 @@ export default function MessageItem({
     setTimeout(() => notification.remove(), 3000);
   };
 
+  const mediaUrl = resolveMediaUrl(message.file_url || "");
+
   if (isDeleting) {
     return (
       <div className={`flex mb-2 px-4 ${isSent ? "justify-end" : "justify-start"}`}>
@@ -263,12 +266,12 @@ export default function MessageItem({
               )}
 
               <img
-                src={`${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(message.file_url || '')}`}
+                src={`${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`}
                 alt="Shared"
                 className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer transition-transform hover:scale-102"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setFullscreenMedia({ url: message.file_url || '', type: 'image' });
+                  setFullscreenMedia({ url: mediaUrl, type: 'image' });
                 }}
                 loading="lazy"
               />
@@ -312,14 +315,14 @@ export default function MessageItem({
               )}
 
               <video
-                src={message.file_url}
+                src={mediaUrl}
                 className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer"
                 controls
                 preload="metadata"
                 controlsList="nodownload"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setFullscreenMedia({ url: message.file_url || '', type: 'video' });
+                  setFullscreenMedia({ url: mediaUrl, type: 'video' });
                 }}
               />
               
@@ -362,7 +365,7 @@ export default function MessageItem({
               )}
 
               <a
-                href={message.file_url}
+                href={mediaUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 p-1.5 rounded-lg no-underline text-inherit hover:bg-black/5 dark:hover:bg-white/10 transition"
