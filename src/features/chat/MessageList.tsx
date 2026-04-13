@@ -15,6 +15,7 @@ interface MessageListProps {
   hasMore?: boolean;
   loadingMore?: boolean;
   bottomPadding?: number;
+  forceScrollToBottomKey?: number;
 }
 
 export default function MessageList({
@@ -29,6 +30,7 @@ export default function MessageList({
   hasMore,
   loadingMore,
   bottomPadding,
+  forceScrollToBottomKey,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const firstMessageIdRef = useRef<string | null>(null);
@@ -56,6 +58,12 @@ export default function MessageList({
     firstMessageIdRef.current = currentOldestId;
     previousScrollHeightRef.current = container.scrollHeight;
   }, [messages]);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
+  }, [forceScrollToBottomKey]);
 
   const handleScroll = () => {
     const container = containerRef.current;

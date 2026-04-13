@@ -30,6 +30,7 @@ interface InputAreaProps {
   receiver: string;
   replyingTo: Message | null;
   onCancelReply: () => void;
+  onLocalMessage?: (message: Message) => void;
 }
 
 export default function InputArea({
@@ -38,6 +39,7 @@ export default function InputArea({
   receiver,
   replyingTo,
   onCancelReply,
+  onLocalMessage,
 }: InputAreaProps) {
   const [text, setText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -231,6 +233,22 @@ export default function InputArea({
     if (!trimmedText && !selectedFile) return;
 
     if (trimmedText) {
+      const tempTextMessage: Message = {
+        id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        room_id: roomId,
+        sender_mobile: sender,
+        receiver_mobile: receiver,
+        message: trimmedText,
+        message_type: "text",
+        is_delivered: false,
+        is_seen: false,
+        reply_to_id: replyingTo?.id || null,
+        reply_to: replyingTo || null,
+        created_at: new Date().toISOString(),
+        is_temp: true,
+      };
+      onLocalMessage?.(tempTextMessage);
+
       socket.emit("send_message", {
         roomId,
         sender,
@@ -262,6 +280,24 @@ export default function InputArea({
         if (!res.ok) throw new Error(`Upload failed with status: ${res.status}`);
         const data = await res.json();
         if (data?.file_url) {
+          const tempFileMessage: Message = {
+            id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            room_id: roomId,
+            sender_mobile: sender,
+            receiver_mobile: receiver,
+            message_type: data.message_type,
+            file_url: data.file_url,
+            file_name: data.file_name,
+            file_size: data.file_size,
+            is_delivered: false,
+            is_seen: false,
+            reply_to_id: replyingTo?.id || null,
+            reply_to: replyingTo || null,
+            created_at: new Date().toISOString(),
+            is_temp: true,
+          } as Message;
+          onLocalMessage?.(tempFileMessage);
+
           socket.emit("send_file", {
             roomId,
             sender,

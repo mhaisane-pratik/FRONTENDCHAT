@@ -32,6 +32,7 @@ export interface Message {
   is_forwarded?: boolean;
   forwarded_from?: string;
   created_at: string;
+  is_temp?: boolean;
 }
 
 const getWallpaperStyle = (wallpaperId: string): React.CSSProperties => {
@@ -58,6 +59,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [forwardSelectedRooms, setForwardSelectedRooms] = useState<string[]>([]);
+  const [forceScrollToBottomKey, setForceScrollToBottomKey] = useState(0);
   const [composerHeight, setComposerHeight] = useState(120);
   const composerRef = useRef<HTMLDivElement | null>(null);
 
@@ -161,6 +163,25 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
       if (msg.room_id !== selectedRoom) return;
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
+
+        // Reconcile optimistic local message when server copy arrives.
+        if (currentUser && msg.sender_mobile === currentUser.mobile) {
+          const optimisticIdx = prev.findIndex(
+            (m) =>
+              m.is_temp &&
+              m.sender_mobile === msg.sender_mobile &&
+              m.message_type === msg.message_type &&
+              (m.message || "") === (msg.message || "") &&
+              (m.file_url || "") === (msg.file_url || "")
+          );
+
+          if (optimisticIdx >= 0) {
+            const next = [...prev];
+            next[optimisticIdx] = { ...msg, is_temp: false };
+            return next;
+          }
+        }
+
         if (msg.reply_to_id && !msg.reply_to) {
           const replyToMsg = prev.find((m) => m.id === msg.reply_to_id);
           if (replyToMsg) msg.reply_to = replyToMsg;
@@ -336,6 +357,11 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
   const handleMediaClick = () => setShowMedia(true);
   const handleMediaClose = () => setShowMedia(false);
 
+  const handleLocalMessage = (localMsg: Message) => {
+    setMessages((prev) => [...prev, localMsg]);
+    setForceScrollToBottomKey((k) => k + 1);
+  };
+
   const handleClearChatSubmit = async () => {
     if (!currentUser) return;
     if (!window.confirm("Are you sure you want to completely clear this chat? This action cannot be undone.")) return;
@@ -506,6 +532,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
           searchQuery={isSearching ? searchQuery : ""}
           highlightedMessageId={isSearching && searchResults.length > 0 ? searchResults[currentSearchIndex] : undefined}
           bottomPadding={composerHeight + 16}
+          forceScrollToBottomKey={forceScrollToBottomKey}
         />
       </div>
 
@@ -531,6 +558,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
           receiver={receiver}
           replyingTo={replyingTo}
           onCancelReply={handleCancelReply}
+          onLocalMessage={handleLocalMessage}
         />
       </div>
 
