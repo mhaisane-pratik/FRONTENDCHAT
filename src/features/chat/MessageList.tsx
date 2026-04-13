@@ -70,7 +70,7 @@ export default function MessageList({
     <div 
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-4" // removed scroll-smooth to prevent jarring jump animations during prepend
+      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 md:pb-32" // keep newest messages above sticky input area
     >
       <div className="py-4 flex flex-col w-full">
         {loadingMore && (
