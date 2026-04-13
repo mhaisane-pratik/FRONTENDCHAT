@@ -344,251 +344,150 @@ export default function InputArea({
   };
 
   return (
-    <div className="w-full flex-shrink-0 z-[95] p-2 sm:p-3 md:px-6 bg-transparent sticky bottom-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      <div className="max-w-5xl mx-auto flex flex-col bg-white dark:bg-gray-800 rounded-[28px] shadow-md border border-gray-200 dark:border-gray-700 transition-colors">
+    <div className="w-full flex-shrink-0 z-[20] bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all duration-300 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] px-3 sm:px-6 md:px-8 py-2 sm:py-3">
+      <div className="max-w-5xl mx-auto flex flex-col gap-2">
         
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 mx-3 sm:mx-4 md:mx-0 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden animate-slideUp">
-          <div className="p-2 max-h-[200px] overflow-y-auto">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                className="w-full text-left px-3 sm:px-4 py-2 sm:py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 flex items-center gap-2 group"
-                onClick={() => handleSuggestionClick(suggestion)}
-              >
-                {text.startsWith('/') ? (
-                  <Sparkles size={16} className="text-indigo-500 flex-shrink-0" />
-                ) : (
-                  <CornerUpRight size={16} className="text-gray-400 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
-                )}
-                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 flex-1 truncate">{suggestion}</span>
-                <ChevronRight size={16} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {replyingTo && (
-        <div className="flex items-center gap-2 sm:gap-3 py-2 sm:py-2 px-3 sm:px-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-t-[28px] border-b border-indigo-200 dark:border-indigo-800 animate-slideDown">
-          <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full flex-shrink-0"></div>
-          <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-            <span className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400 lowercase flex items-center gap-1">
-              <CornerUpRight size={12} className="sm:w-4 sm:h-4" />
-              <span className="truncate">Replying to {replyingTo.sender_name}</span>
-            </span>
-            <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 truncate">
-              {replyingTo.message || `${replyingTo.message_type}`}
-            </span>
-          </div>
-          <button
-            className="w-6 h-6 sm:w-8 sm:h-8 border-none bg-white/50 dark:bg-gray-700/50 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 transition-all flex-shrink-0 backdrop-blur-sm group"
-            onClick={onCancelReply}
-          >
-            <X size={14} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-          </button>
-        </div>
-      )}
-
-      {selectedFile && (
-        <div className="flex items-center justify-between py-2 sm:py-2 px-3 sm:px-4 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-t-[28px] border-b border-gray-200 dark:border-gray-700 animate-slideDown">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="relative flex-shrink-0">
-              {filePreview ? (
-                <img 
-                  src={filePreview} 
-                  alt="Preview" 
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg sm:rounded-xl shadow-md"
-                />
-              ) : (
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-md">
-                  {getFileIcon(selectedFile)}
-                </div>
-              )}
-              {uploadProgress > 0 && uploadProgress < 100 && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold">
-                  {uploadProgress}%
-                </div>
-              )}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 mb-3 mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-slideUp z-[100]">
+            <div className="p-2 max-h-[220px] overflow-y-auto custom-scrollbar">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  className="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 flex items-center gap-3 group"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  <Sparkles size={16} className="text-indigo-500 flex-shrink-0 opacity-70 group-hover:opacity-100" />
+                  <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 flex-1 truncate font-medium">{suggestion}</span>
+                </button>
+              ))}
             </div>
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[280px]">
-                {selectedFile.name}
+          </div>
+        )}
+
+        {replyingTo && (
+          <div className="flex items-center gap-3 py-2 px-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 animate-slideDown mb-1">
+            <div className="w-1 h-8 bg-indigo-500 rounded-full flex-shrink-0"></div>
+            <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1 uppercase tracking-wider">
+                <CornerUpRight size={12} />
+                Replying to {replyingTo.sender_mobile}
               </span>
-              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {(selectedFile.size / 1024).toFixed(2)} KB
+              <span className="text-sm text-gray-600 dark:text-gray-300 truncate italic">
+                {replyingTo.message || "Attachment"}
               </span>
             </div>
-          </div>
-          <button
-            className="w-6 h-6 sm:w-8 sm:h-8 border-none bg-white dark:bg-gray-700 rounded-full flex items-center justify-center text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all flex-shrink-0 shadow-sm group"
-            onClick={clearFileSelection}
-            disabled={uploading}
-          >
-            <X size={14} className="sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-          </button>
-        </div>
-      )}
-
-      {uploadError && (
-        <div className="flex items-center gap-2 py-1.5 sm:py-2 px-3 sm:px-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30 rounded-t-[28px] border-b border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm sm:text-base animate-shake">
-          <AlertCircle size={16} className="sm:w-5 sm:h-5 flex-shrink-0" />
-          <span className="truncate">{uploadError}</span>
-          <button 
-            onClick={() => setUploadError(null)}
-            className="ml-auto hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full p-1 flex-shrink-0"
-          >
-            <X size={14} className="sm:w-4 sm:h-4" />
-          </button>
-        </div>
-      )}
-
-      {showEmoji && (
-        <>
-          <div className="fixed inset-0 z-[9999] bg-black/5 backdrop-blur-sm" onClick={() => setShowEmoji(false)} />
-          <div
-            className="fixed z-[10000] shadow-2xl rounded-2xl overflow-hidden animate-scaleUp"
-            style={{
-              left: '50%',
-              transform: 'translateX(-50%)',
-              bottom: '90px',
-              maxWidth: 'calc(100vw - 32px)'
-            }}
-          >
-            <div className="scale-[0.85] sm:scale-100 origin-bottom">
-              <EmojiPicker
-                onEmojiClick={onEmojiClick}
-                width="350px"
-                height="400px"
-                searchPlaceholder="Search emoji..."
-                skinTonesDisabled
-                previewConfig={{ showPreview: false }}
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      {showGiphy && (
-        <>
-          <div className="fixed inset-0 z-[9999] bg-black/5 backdrop-blur-sm" onClick={() => setShowGiphy(false)} />
-          <div
-            className="fixed z-[10000] shadow-2xl rounded-2xl overflow-hidden animate-scaleUp bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex flex-col"
-            style={{
-              left: '50%',
-              transform: 'translateX(-50%)',
-              bottom: '90px',
-              width: '350px',
-              height: '400px',
-              maxWidth: 'calc(100vw - 32px)'
-            }}
-          >
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
-              <input
-                type="text"
-                placeholder="Search Giphy..."
-                value={giphySearch}
-                onChange={(e) => setGiphySearch(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 outline-none text-sm focus:border-indigo-500 text-gray-900 dark:text-white"
-                autoFocus
-              />
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900/50">
-              {giphyLoading && giphyResults.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {giphyResults.map((gif) => (
-                    <img
-                      key={gif.id}
-                      src={gif.media[0].tinygif.url}
-                      alt={gif.id}
-                      className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition hover:scale-105"
-                      onClick={() => sendGif(gif)}
-                    />
-                  ))}
-                  {giphyResults.length === 0 && !giphyLoading && (
-                    <div className="col-span-2 text-center text-sm text-gray-500 py-10">No GIFs found</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="flex items-end gap-1 sm:gap-2 py-2 sm:py-3 px-3 sm:px-4">
-        <button
-          className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 disabled:opacity-40 flex-shrink-0 group ${showEmoji ? 'bg-gray-100 dark:bg-gray-700 text-indigo-500' : ''}`}
-          onClick={() => { setShowEmoji(!showEmoji); setShowGiphy(false); }}
-          title="Emoji"
-          disabled={uploading}
-        >
-          <Smile size={22} className="group-hover:text-indigo-500 transition-colors" />
-        </button>
-
-        <button
-          className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[11px] sm:text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 disabled:opacity-40 flex-shrink-0 group ${showGiphy ? 'bg-gray-100 dark:bg-gray-700 text-indigo-500' : ''}`}
-          onClick={() => { setShowGiphy(!showGiphy); setShowEmoji(false); }}
-          title="GIFs"
-          disabled={uploading}
-        >
-          GIF
-        </button>
-
-        <label
-          className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 disabled:opacity-40 flex-shrink-0 cursor-pointer group"
-          title="Attach file"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileSelect}
-            style={{ display: "none" }}
-            accept="image/*,.pdf,.doc,.docx,.txt,.zip,audio/*,video/*"
-            disabled={uploading}
-          />
-          <Paperclip size={22} className="group-hover:text-indigo-500 transition-colors" />
-        </label>
-
-        <div className="flex-1 relative min-w-0 flex items-center bg-gray-100 dark:bg-gray-700/60 rounded-3xl group ring-1 ring-transparent focus-within:ring-indigo-500/20 transition-all">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => handleTyping(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            rows={1}
-            className="w-full px-4 py-3 bg-transparent border-none text-[15px] sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 outline-none resize-none min-h-[44px] max-h-[120px] overflow-y-auto leading-relaxed"
-            disabled={uploading}
-            autoFocus
-          />
-          {text && (
             <button
-              className="pr-4 pl-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors h-full flex items-center"
-              onClick={() => setText('')}
+              className="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-full transition-colors flex-shrink-0"
+              onClick={onCancelReply}
+            >
+              <X size={16} className="text-gray-400" />
+            </button>
+          </div>
+        )}
+
+        {selectedFile && (
+          <div className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-700 animate-slideDown mb-1">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="relative flex-shrink-0">
+                {filePreview ? (
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className="w-12 h-12 object-cover rounded-xl shadow-sm border border-white dark:border-gray-700" 
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-sm">
+                    {getFileIcon(selectedFile)}
+                  </div>
+                )}
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center text-white text-[10px] font-bold">
+                    {uploadProgress}%
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[180px] xs:max-w-[240px]">
+                  {selectedFile.name}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {(selectedFile.size / 1024).toFixed(2)} KB
+                </span>
+              </div>
+            </div>
+            <button
+              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors disabled:opacity-50"
+              onClick={clearFileSelection}
+              disabled={uploading}
             >
               <X size={18} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
-        <button
-          className={`ml-1 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-full bg-indigo-500 hover:bg-indigo-600 text-white shadow-md transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ${text.trim() || selectedFile ? 'scale-100' : 'scale-90 opacity-80'}`}
-          onClick={sendMessage}
-          disabled={(!text.trim() && !selectedFile) || uploading}
-          title="Send"
-        >
-          {uploading ? (
-            <Loader2 size={20} className="animate-spin" />
-          ) : (
-            <Send size={20} className="translate-x-0.5 -translate-y-0.5" />
-          )}
-        </button>
+        <div className="flex items-end gap-2 sm:gap-3">
+          <div className="flex-1 flex items-end gap-1 sm:gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-[24px] sm:rounded-[32px] px-2 py-1.5 sm:py-2 border border-transparent focus-within:border-indigo-500/30 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-300 shadow-inner">
+            <div className="flex items-center">
+              <button
+                className={`p-2 sm:p-2.5 rounded-full transition-colors duration-200 flex-shrink-0 ${showEmoji ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                onClick={() => { setShowEmoji(!showEmoji); setShowGiphy(false); }}
+                title="Emoji"
+              >
+                <Smile size={22} className="sm:w-6 sm:h-6" />
+              </button>
+
+              <label className="p-2 sm:p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors duration-200 flex-shrink-0 cursor-pointer">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx,.txt,.zip,audio/*,video/*"
+                  disabled={uploading}
+                />
+                <Paperclip size={22} className="sm:w-6 sm:h-6" />
+              </label>
+            </div>
+
+            <div className="flex-1 min-w-0 py-1 sm:py-1.5 px-1 sm:px-2">
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={(e) => handleTyping(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Message"
+                rows={1}
+                className="w-full bg-transparent border-none text-[15px] sm:text-[16px] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 outline-none resize-none min-h-[24px] max-h-[150px] overflow-y-auto leading-relaxed"
+                disabled={uploading}
+              />
+            </div>
+            
+            <button
+               className="p-2 sm:p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors duration-200 flex-shrink-0"
+               onClick={() => setShowGiphy(!showGiphy)}
+               title="GIFs"
+            >
+               <Sparkles size={22} className={`${showGiphy ? 'text-indigo-500' : ''} sm:w-6 sm:h-6`} />
+            </button>
+          </div>
+
+          <button
+            className={`w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-full transition-all duration-300 shadow-lg flex-shrink-0 ${
+              text.trim() || selectedFile 
+              ? 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white scale-100 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:scale-90' 
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+            }`}
+            onClick={sendMessage}
+            disabled={(!text.trim() && !selectedFile) || uploading}
+          >
+            {uploading ? (
+              <Loader2 size={24} className="animate-spin" />
+            ) : (
+              <Send size={22} className={`${text.trim() || selectedFile ? 'ml-0.5' : ''} sm:w-7 sm:h-7`} />
+            )}
+          </button>
+        </div>
       </div>
-    </div>
     </div>
   );
 }

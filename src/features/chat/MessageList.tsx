@@ -14,7 +14,6 @@ interface MessageListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
-  bottomPadding?: number;
   forceScrollToBottomKey?: number;
 }
 
@@ -29,7 +28,6 @@ export default function MessageList({
   onLoadMore,
   hasMore,
   loadingMore,
-  bottomPadding,
   forceScrollToBottomKey,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,10 +78,13 @@ export default function MessageList({
     <div 
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-      style={{ paddingBottom: `${Math.max(bottomPadding || 120, 120)}px` }}
+      className="flex-1 w-full overflow-y-auto overflow-x-hidden scroll-smooth"
+      style={{ 
+        scrollbarWidth: 'thin',
+        paddingBottom: '20px' // Minimal padding for aesthetic
+      }}
     >
-      <div className="py-4 flex flex-col w-full">
+      <div className="flex flex-col w-full px-0">
         {loadingMore && (
            <div className="flex justify-center py-2 text-indigo-500 animate-pulse">
              <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -98,24 +99,26 @@ export default function MessageList({
         ) : (
           Object.keys(groupedMessages).map((dateLabel) => (
             <div key={dateLabel} className="w-full">
-              <div className="flex items-center justify-center my-4 sticky top-2 z-10">
-                <span className="bg-gray-200/80 dark:bg-gray-700/80 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm">
+              <div className="flex items-center justify-center my-6 sticky top-2 z-10 pointer-events-none">
+                <span className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-1 rounded-lg text-[11px] font-semibold text-gray-500 dark:text-gray-400 shadow-sm uppercase tracking-wider border border-gray-100 dark:border-gray-700">
                   {dateLabel}
                 </span>
               </div>
-              {groupedMessages[dateLabel].map((message) => (
-                <MessageItem
-                  key={message.id}
-                  message={message}
-                  isSent={message.sender_mobile === currentUser}
-                  currentUser={currentUser}
-                  onReply={onReply}
-                  onRefresh={onRefresh}
-                  onForward={onForward ? () => onForward(message) : undefined}
-                  searchQuery={searchQuery}
-                  isHighlighted={highlightedMessageId === message.id}
-                />
-              ))}
+              <div className="flex flex-col gap-1 w-full">
+                {groupedMessages[dateLabel].map((message) => (
+                  <MessageItem
+                    key={message.id}
+                    message={message}
+                    isSent={message.sender_mobile === currentUser}
+                    currentUser={currentUser}
+                    onReply={onReply}
+                    onRefresh={onRefresh}
+                    onForward={onForward ? () => onForward(message) : undefined}
+                    searchQuery={searchQuery}
+                    isHighlighted={highlightedMessageId === message.id}
+                  />
+                ))}
+              </div>
             </div>
           ))
         )}

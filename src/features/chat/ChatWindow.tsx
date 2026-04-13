@@ -43,7 +43,13 @@ const getWallpaperStyle = (wallpaperId: string): React.CSSProperties => {
   return { background: "#efeae2" };
 };
 
-export default function ChatWindow({ onBack }: { onBack?: () => void }) {
+interface ChatWindowProps {
+  onBack?: () => void;
+  toggleSidebar?: () => void;
+  sidebarHidden?: boolean;
+}
+
+export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: ChatWindowProps) {
   const { currentUser, selectedRoom, chatRooms, wallpaper, typingUsers, playNotificationSound } = useChat();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,28 +66,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [forwardSelectedRooms, setForwardSelectedRooms] = useState<string[]>([]);
   const [forceScrollToBottomKey, setForceScrollToBottomKey] = useState(0);
-  const [composerHeight, setComposerHeight] = useState(120);
-  const composerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const node = composerRef.current;
-    if (!node) return;
-
-    const updateHeight = () => {
-      setComposerHeight(node.offsetHeight || 120);
-    };
-
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(node);
-    window.addEventListener("resize", updateHeight);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateHeight);
-    };
-  }, []);
 
   useEffect(() => {
     if (!isSearching || !searchQuery) {
@@ -188,6 +173,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         }
         return [...prev, msg];
       });
+      setForceScrollToBottomKey((k) => k + 1);
       if (msg.sender_mobile !== currentUser.mobile) {
         playNotificationSound("receive");
         setTimeout(() => {
@@ -269,6 +255,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       setMessages(sortedMessages);
+      setForceScrollToBottomKey((k) => k + 1);
       setHasMore(newHasMore);
       if (sortedMessages.length > 0) markAsRead(sortedMessages);
     } catch (err: any) {
@@ -464,13 +451,15 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
-      <div className="sticky top-0 z-[120] flex-shrink-0">
+    <div className="flex flex-col w-full h-full bg-cover relative overflow-hidden overscroll-none" style={getWallpaperStyle(wallpaper)}>
+      <div className="sticky top-0 z-[30] flex-shrink-0">
         <ChatHeader
           receiver={receiver}
           roomId={selectedRoom || ""}
           onMediaClick={handleMediaClick}
           onBack={onBack}
+          toggleSidebar={toggleSidebar}
+          sidebarHidden={sidebarHidden}
           onClearChat={handleClearChatSubmit}
           onSearchAction={() => setIsSearching(true)}
         />
@@ -519,7 +508,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         </div>
       )}
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
         <MessageList
           messages={messages}
           currentUser={currentUser.mobile}
@@ -531,7 +520,6 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
           loadingMore={loadingMore}
           searchQuery={isSearching ? searchQuery : ""}
           highlightedMessageId={isSearching && searchResults.length > 0 ? searchResults[currentSearchIndex] : undefined}
-          bottomPadding={composerHeight + 16}
           forceScrollToBottomKey={forceScrollToBottomKey}
         />
       </div>
@@ -551,7 +539,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         </div>
       )}
 
-      <div ref={composerRef} className="w-full">
+      <div className="w-full flex-shrink-0 z-[30]">
         <InputArea
           roomId={selectedRoom || ""}
           sender={currentUser.mobile}

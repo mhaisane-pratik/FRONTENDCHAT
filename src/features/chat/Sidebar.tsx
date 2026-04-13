@@ -82,7 +82,7 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
   };
 
   return (
-    <div className="w-full md:w-[420px] h-screen flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
+    <div className="w-full md:w-[420px] h-screen flex flex-col bg-[#fdfdfd] dark:bg-[#111b21] overflow-hidden">
       
       {/* Dynamic App Branding & Header */}
       <div className="flex flex-col bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -130,7 +130,7 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
             <input
               type="text"
               placeholder="Search or start new chat"
-              className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all font-medium"
+              className="w-full pl-10 pr-8 py-2.5 rounded-xl border-none bg-gray-100 dark:bg-[#202c33] text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none transition-all font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -148,11 +148,11 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex px-3 gap-1 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex px-3 gap-1 bg-[#fdfdfd] dark:bg-[#111b21]">
         <button
-          className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 ${
+          className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${
             activeFilter === "all"
-              ? "border-green-500 text-green-600 dark:text-green-400"
+              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
           onClick={() => setActiveFilter("all")}
@@ -160,36 +160,26 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
           All
         </button>
         <button
-          className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 flex items-center justify-center gap-1.5 ${
             activeFilter === "unread"
-              ? "border-green-500 text-green-600 dark:text-green-400"
+              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
           onClick={() => setActiveFilter("unread")}
         >
-          <CheckCheck size={16} className="stroke-[1.5]" />
+          <CheckCheck size={16} className="stroke-[2]" />
           Unread
-          {unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 bg-green-500 text-white text-xs font-semibold rounded-full ml-1">
-              {unreadCount}
-            </span>
-          )}
         </button>
         <button
-          className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 flex items-center justify-center gap-1.5 ${
             activeFilter === "groups"
-              ? "border-green-500 text-green-600 dark:text-green-400"
+              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
           }`}
           onClick={() => setActiveFilter("groups")}
         >
-          <Users size={16} className="stroke-[1.5]" />
+          <Users size={16} className="stroke-[2]" />
           Groups
-          {groupsCount > 0 && (
-            <span className="px-1.5 py-0.5 bg-gray-500 text-white text-xs font-semibold rounded-full ml-1">
-              {groupsCount}
-            </span>
-          )}
         </button>
       </div>
 

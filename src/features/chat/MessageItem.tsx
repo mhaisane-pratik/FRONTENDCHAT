@@ -197,15 +197,16 @@ export default function MessageItem({
         ref={wrapperRef}
         className={`flex mb-2 px-4 relative transition-all duration-500 ${isSent ? "justify-end" : "justify-start"} ${isHighlighted ? "bg-black/5 dark:bg-white/5 py-1 rounded-lg" : ""}`}
       >
-        <div className={`relative max-w-[70%] ${isSent ? "order-2" : "order-1"}`} onClick={handleMessageClick}>
+        <div className={`relative max-w-[85%] sm:max-w-[75%] md:max-w-[65%] group ${isSent ? "items-end" : "items-start"}`} onClick={handleMessageClick}>
           {message.message_type === "text" && (
             <div
-              className={`relative rounded-2xl px-3 py-2 pb-6 shadow-sm ${
+              className={`relative px-3 py-2 pb-6 shadow-sm rounded-2xl ${
                 isSent
-                  ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-sm"
-                  : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-sm"
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-none self-end"
+                  : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-none self-start"
               }`}
             >
+
               {message.reply_to && (
                 <div className="mb-1.5 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
                   <div className="flex">
@@ -229,15 +230,26 @@ export default function MessageItem({
                 </div>
               )}
 
-              <p className="m-0 pr-12 text-sm leading-relaxed break-words whitespace-pre-wrap select-text">
+              <p className="m-0 text-[14.5px] leading-snug break-words whitespace-pre-wrap select-text relative">
                 {renderMessageContent(message.message)}
+                <span className="inline-block w-[60px] h-0"></span>
               </p>
               
-              <div className="absolute bottom-1.5 right-2 flex items-center gap-0.5">
-                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+              <div className="absolute bottom-1 right-2 flex items-center gap-1.5 bg-gradient-to-l from-black/5 to-transparent px-1 rounded">
+                <span className={`text-[10px] font-medium ${isSent ? "text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
                   {formatTime(message.created_at)}
                 </span>
-                {getMessageStatus()}
+                {isSent && (
+                   <span className="flex items-center">
+                     {message.is_seen ? (
+                       <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                     ) : (
+                       <span className="text-white/70 text-[11px] leading-none">
+                         {message.is_delivered ? "✓✓" : "✓"}
+                       </span>
+                     )}
+                   </span>
+                )}
               </div>
             </div>
           )}
@@ -283,16 +295,27 @@ export default function MessageItem({
                 loading="lazy"
               />
               
-              {message.message && (
-                <p className={`m-1 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
-                  {renderMessageContent(message.message)}
-                </p>
-              )}
-              <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
-                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+                {message.message && (
+                  <p className={`m-1 text-sm break-words select-text relative ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                    {renderMessageContent(message.message)}
+                    <span className="inline-block w-[60px] h-0"></span>
+                  </p>
+                )}
+              <div className="absolute bottom-1.5 right-2 flex items-center gap-1 bg-black/20 px-1.5 py-0.5 rounded-lg backdrop-blur-sm">
+                <span className="text-[10px] text-white font-medium">
                   {formatTime(message.created_at)}
                 </span>
-                {getMessageStatus()}
+                {isSent && (
+                  <span className="flex items-center">
+                    {message.is_seen ? (
+                      <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                    ) : (
+                      <span className="text-white/80 text-[11px] leading-none">
+                        {message.is_delivered ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -333,16 +356,27 @@ export default function MessageItem({
                 }}
               />
               
-              {message.message && (
-                <p className={`m-1 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
-                  {renderMessageContent(message.message)}
-                </p>
-              )}
-              <div className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-black/40 rounded-full px-1.5 py-0.5 backdrop-blur-sm">
-                <span className={`text-[10px] text-white/90`}>
+                {message.message && (
+                  <p className={`m-1 text-sm break-words select-text relative ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                    {renderMessageContent(message.message)}
+                    <span className="inline-block w-[60px] h-0"></span>
+                  </p>
+                )}
+              <div className="absolute bottom-1.5 right-2 flex items-center gap-1 bg-black/20 px-1.5 py-0.5 rounded-lg backdrop-blur-sm">
+                <span className="text-[10px] text-white font-medium">
                   {formatTime(message.created_at)}
                 </span>
-                {getMessageStatus()}
+                {isSent && (
+                  <span className="flex items-center">
+                    {message.is_seen ? (
+                      <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                    ) : (
+                      <span className="text-white/80 text-[11px] leading-none">
+                        {message.is_delivered ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -395,15 +429,26 @@ export default function MessageItem({
                 </div>
               </a>
               {message.message && (
-                <p className={`mt-1.5 mb-0 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                <p className={`mt-1.5 mb-2 text-sm break-words select-text relative ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
                   {renderMessageContent(message.message)}
+                  <span className="inline-block w-[60px] h-0"></span>
                 </p>
               )}
-              <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
-                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+              <div className="absolute bottom-1 right-2 flex items-center gap-1 bg-black/5 dark:bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className={`text-[10px] font-medium ${isSent ? "text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
                   {formatTime(message.created_at)}
                 </span>
-                {getMessageStatus()}
+                {isSent && (
+                  <span className="flex items-center">
+                    {message.is_seen ? (
+                      <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                    ) : (
+                      <span className="text-white/80 text-[11px] leading-none">
+                        {message.is_delivered ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </span>
+                )}
               </div>
             </div>
           )}

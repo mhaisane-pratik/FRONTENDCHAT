@@ -21,7 +21,9 @@ import {
   UserCircle2,
   Search,
   Clock,
-  UserPlus
+  UserPlus,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,6 +36,8 @@ interface ChatHeaderProps {
   onBack?: () => void;
   onClearChat?: () => void;
   onSearchAction?: () => void;
+  toggleSidebar?: () => void;
+  sidebarHidden?: boolean;
 }
 
 export default function ChatHeader({
@@ -43,6 +47,8 @@ export default function ChatHeader({
   onBack,
   onClearChat,
   onSearchAction,
+  toggleSidebar,
+  sidebarHidden,
 }: ChatHeaderProps) {
   const navigate = useNavigate();
   const { onlineUsers, setCurrentUser, setSelectedRoom, chatRooms, currentUser, userProfiles, typingUsers, getDisplayName } = useChat();
@@ -113,14 +119,14 @@ export default function ChatHeader({
     <>
       <div
         className={`
-          flex justify-between items-center z-[100]
-          bg-white dark:bg-gray-800
-          border-b border-gray-200 dark:border-gray-700
+          flex justify-between items-center z-[20]
+          bg-white/95 dark:bg-gray-800/95 backdrop-blur-md
+          border-b border-gray-200/50 dark:border-gray-700/50
           px-3 md:px-6 py-2 md:py-3 h-[60px] md:h-[72px] box-border
           transition-all duration-300
-          shadow-sm
+          shadow-[0_2px_15px_rgba(0,0,0,0.05)]
           w-full flex-shrink-0
-          cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700
+          cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-700/50
         `}
         onClick={handleHeaderClick}
       >
@@ -143,6 +149,17 @@ export default function ChatHeader({
               aria-label="Back"
             >
               <ArrowLeft size={18} />
+            </button>
+          )}
+          
+          {/* Laptop sidebar toggle */}
+          {toggleSidebar && (
+            <button
+              className="hidden md:flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-gray-750 shadow-sm transition-all duration-200 active:scale-90 flex-shrink-0"
+              onClick={(e) => { e.stopPropagation(); toggleSidebar(); }}
+              title={sidebarHidden ? "Show Sidebar" : "Hide Sidebar"}
+            >
+              {sidebarHidden ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
             </button>
           )}
 
