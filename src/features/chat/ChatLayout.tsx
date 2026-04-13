@@ -79,35 +79,37 @@ export default function ChatLayout() {
   /* ================= MAIN UI ================= */
   return (
     <div
-      className={`flex w-screen h-[100dvh] overflow-hidden fixed inset-0 transition-colors duration-500 ${
+      className={`flex w-screen h-[100dvh] overflow-hidden fixed inset-0 m-0 p-0 transition-colors duration-500 ${
         theme === "dark" ? "dark bg-[#0b141a]" : "bg-[#f0f2f5]"
       }`}
       data-wallpaper={wallpaper}
     >
       <div 
         className={`
-          flex w-full h-full relative overflow-hidden transition-all duration-500
+          flex w-full h-full relative overflow-hidden transition-all duration-500 m-0 p-0
           ${theme === "dark" ? "bg-[#0b141a]" : "bg-white"}
         `}
       >
         {/* ================= SIDEBAR ================= */}
         <div
           className={`
-            ${isMobile ? "fixed inset-0 z-50 bg-white dark:bg-[#111b21]" : "relative"}
-            ${(isMobile && selectedRoom) || (!isMobile && sidebarHidden) ? "translate-x-[-100%] opacity-0 pointer-events-none w-0" : "translate-x-0 opacity-100 w-full md:w-[300px] lg:w-[320px] xl:w-[360px]"}
-            h-full transition-all duration-300 ease-in-out flex-shrink-0 z-[60] border-r border-gray-200/50 dark:border-gray-800/50 shadow-[1px_0_10px_rgba(0,0,0,0.02)]
+            ${isMobile ? "fixed inset-0 z-[100] bg-white dark:bg-[#111b21]" : "relative flex-shrink-0"}
+            ${(isMobile && selectedRoom) || (!isMobile && sidebarHidden) ? "w-0 -translate-x-full opacity-0 invisible" : "w-full md:w-[300px] lg:w-[350px] xl:w-[400px] translate-x-0 opacity-100 visible"}
+            h-full transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111b21]
           `}
         >
-          <Sidebar
-            onSettingsClick={() => setShowSettings(true)}
-            isMobile={isMobile}
-          />
+          <div className="w-full h-full overflow-hidden">
+            <Sidebar
+              onSettingsClick={() => setShowSettings(true)}
+              isMobile={isMobile}
+            />
+          </div>
         </div>
 
         {/* ================= CHAT AREA ================= */}
-        <div className={`flex-1 h-full min-w-0 relative bg-[#efeae2] dark:bg-[#0b141a] transition-all duration-300 ${isMobile && !selectedRoom ? "hidden" : "block"}`}>
+        <div className={`flex-1 h-full min-w-0 bg-[#efeae2] dark:bg-[#0b141a] transition-all duration-300 relative ${isMobile && !selectedRoom ? "hidden" : "block"}`}>
           {selectedRoom ? (
-            <div className="absolute inset-0 animate-fadeIn overflow-hidden">
+            <div className="flex flex-col w-full h-full">
               <ChatWindow 
                 onBack={handleBack} 
                 toggleSidebar={() => setSidebarHidden(!sidebarHidden)}

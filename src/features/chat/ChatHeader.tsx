@@ -212,11 +212,7 @@ export default function ChatHeader({
           <div className="flex flex-col min-w-0 flex-1">
             <div className="flex items-center gap-1.5 md:gap-2">
               <h3
-                className={`
-                  font-semibold truncate text-gray-900 dark:text-white
-                  text-sm md:text-base lg:text-lg
-                  max-w-[150px] xs:max-w-[200px] sm:max-w-[250px] md:max-w-[300px]
-                `}
+                className="font-bold truncate text-gray-900 dark:text-white text-base md:text-lg lg:text-xl"
               >
                 {displayName}
               </h3>

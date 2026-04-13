@@ -82,7 +82,7 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
   };
 
   return (
-    <div className="w-full md:w-[420px] h-screen flex flex-col bg-[#fdfdfd] dark:bg-[#111b21] overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-[#fdfdfd] dark:bg-[#111b21] overflow-hidden">
       
       {/* Dynamic App Branding & Header */}
       <div className="flex flex-col bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
