@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useChat } from "../../contexts/ChatContext";
 import { socket } from "../../api/socket";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 import "./CreateGroupModal.css";
 
 interface CreateGroupModalProps {
@@ -227,7 +228,7 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                         >
                           <img
                             src={
-                              user.profile_picture ||
+                              resolveMediaUrl(user.profile_picture) ||
                               `https://ui-avatars.com/api/?name=${user.mobile}&background=random`
                             }
                             alt={user.mobile}

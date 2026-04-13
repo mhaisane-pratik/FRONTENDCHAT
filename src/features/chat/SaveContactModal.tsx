@@ -16,7 +16,6 @@ export default function SaveContactModal({ contactUsername, defaultName, onClose
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const API_URL = (import.meta as any).env.VITE_API_URL as string;
-  const API_KEY = "ZATCHAT_PRATEEK9373";
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -33,7 +32,6 @@ export default function SaveContactModal({ contactUsername, defaultName, onClose
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": API_KEY,
         },
         body: JSON.stringify({
           owner_mobile: currentUser.mobile,

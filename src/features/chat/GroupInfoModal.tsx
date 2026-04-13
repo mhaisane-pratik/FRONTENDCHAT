@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useChat } from "../../contexts/ChatContext";
 import { socket } from "../../api/socket";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 interface GroupInfoModalProps {
   groupId: string;
@@ -321,7 +322,7 @@ export default function GroupInfoModal({ groupId, onClose }: GroupInfoModalProps
                   <div key={member.mobile} className="flex items-center gap-3 p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                     <img
                       src={
-                        member.profile_picture ||
+                        resolveMediaUrl(member.profile_picture) ||
                         `https://ui-avatars.com/api/?name=${member.mobile}&background=random`
                       }
                       alt={member.mobile}
@@ -390,7 +391,7 @@ export default function GroupInfoModal({ groupId, onClose }: GroupInfoModalProps
                     >
                       <img
                         src={
-                          user.profile_picture ||
+                          resolveMediaUrl(user.profile_picture) ||
                           `https://ui-avatars.com/api/?name=${user.mobile}&background=random`
                         }
                         alt={user.mobile}

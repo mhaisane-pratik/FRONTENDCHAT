@@ -96,9 +96,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchContacts = async () => {
     if (!currentUser) return;
     try {
-      const res = await fetch(`${API_URL}/api/v1/contacts/${encodeURIComponent(currentUser.mobile)}`, {
-        headers: { "x-api-key": API_KEY }
-      });
+      const res = await fetch(`${API_URL}/api/v1/contacts/${encodeURIComponent(currentUser.mobile)}`);
       if (res.ok) {
         const data = await res.json();
         const contactMap = new Map<string, string>();
