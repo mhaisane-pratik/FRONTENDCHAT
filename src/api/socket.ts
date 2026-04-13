@@ -2,7 +2,7 @@
 
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string;
+const SOCKET_URL = "https://zatbackend.onrender.com";
 
 // 🔐 API KEY (same as backend .env)
 const API_KEY = "ZATCHAT_PRATEEK9373";

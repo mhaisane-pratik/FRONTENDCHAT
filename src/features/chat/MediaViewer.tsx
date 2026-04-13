@@ -21,7 +21,7 @@ interface MediaFile {
   message?: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 
 export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
   const { currentUser } = useChat();

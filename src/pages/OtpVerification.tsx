@@ -5,7 +5,7 @@ import { socket } from "../api/socket";
 import { Home, User, Lock, Phone, MessageSquare } from "lucide-react";
 import "./Login.css";
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 
 export default function ChatLogin() {
   const navigate = useNavigate();

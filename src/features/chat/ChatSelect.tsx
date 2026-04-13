@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useChat } from "../../contexts/ChatContext";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 
 interface ChatRoom {
   roomId: string;

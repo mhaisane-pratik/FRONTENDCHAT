@@ -1,8 +1,8 @@
 // File: src/utils/mediaUrl.ts
 
 // Standard Vite environment variable access
-const API_URL = import.meta.env.VITE_API_URL as string;
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
+const SOCKET_URL = "https://zatbackend.onrender.com";
 
 const getApiOrigin = () => {
   try {
@@ -32,6 +32,14 @@ const getApiOrigin = () => {
   }
 };
 
+const getProductionApiOrigin = () => {
+  try {
+    return new URL(API_URL).origin;
+  } catch {
+    return getApiOrigin();
+  }
+};
+
 /**
  * Resolves a potentially relative or localhost media URL to a correct production URL.
  */
@@ -52,11 +60,17 @@ export const resolveMediaUrl = (url?: string | null): string => {
     try {
       const parsed = new URL(url);
       const isLocalhost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+      const backendOrigin = getProductionApiOrigin();
+      const backendHostname = new URL(backendOrigin).hostname;
       const currentIsLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       
-      // CRITICAL FIX: If we are in production but the image URL points to localhost, rewrite it to the backend origin.
-      if (isLocalhost && !currentIsLocalhost) {
+      // CRITICAL FIX: If we are in production but the image URL points to localhost or an insecure backend URL, rewrite it.
+      if ((isLocalhost || (parsed.hostname === backendHostname && parsed.protocol === "http:")) && !currentIsLocalhost) {
         return `${origin}${parsed.pathname}${parsed.search}`;
+      }
+
+      if (parsed.hostname === backendHostname && parsed.protocol === "http:") {
+        return `${backendOrigin}${parsed.pathname}${parsed.search}`;
       }
     } catch {
       // Ignore URL parsing errors

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useChat } from "../../contexts/ChatContext";
 import { socket } from "../../api/socket";
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 const API_KEY = "ZATCHAT_PRATEEK9373";
 
 interface NewChatModalProps {

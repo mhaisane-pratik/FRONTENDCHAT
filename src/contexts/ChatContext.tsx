@@ -71,7 +71,7 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-const API_URL = (import.meta as any).env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 const API_KEY = "ZATCHAT_PRATEEK9373";
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

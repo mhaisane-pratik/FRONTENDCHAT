@@ -16,7 +16,7 @@ interface User {
   is_online?: boolean;
 }
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = "https://zatbackend.onrender.com";
 
 export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   const { currentUser, chatRooms, refreshRooms, setSelectedRoom } = useChat();
