@@ -14,6 +14,7 @@ interface MessageListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  bottomPadding?: number;
 }
 
 export default function MessageList({
@@ -27,6 +28,7 @@ export default function MessageList({
   onLoadMore,
   hasMore,
   loadingMore,
+  bottomPadding,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const firstMessageIdRef = useRef<string | null>(null);
@@ -70,7 +72,8 @@ export default function MessageList({
     <div 
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-28 md:pb-32" // keep newest messages above sticky input area
+      className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+      style={{ paddingBottom: `${Math.max(bottomPadding || 120, 120)}px` }}
     >
       <div className="py-4 flex flex-col w-full">
         {loadingMore && (

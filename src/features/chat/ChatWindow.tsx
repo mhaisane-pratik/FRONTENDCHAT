@@ -58,6 +58,28 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [forwardSelectedRooms, setForwardSelectedRooms] = useState<string[]>([]);
+  const [composerHeight, setComposerHeight] = useState(120);
+  const composerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = composerRef.current;
+    if (!node) return;
+
+    const updateHeight = () => {
+      setComposerHeight(node.offsetHeight || 120);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    window.addEventListener("resize", updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isSearching || !searchQuery) {
@@ -483,6 +505,7 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
           loadingMore={loadingMore}
           searchQuery={isSearching ? searchQuery : ""}
           highlightedMessageId={isSearching && searchResults.length > 0 ? searchResults[currentSearchIndex] : undefined}
+          bottomPadding={composerHeight + 16}
         />
       </div>
 
@@ -501,13 +524,15 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         </div>
       )}
 
-      <InputArea
-        roomId={selectedRoom || ""}
-        sender={currentUser.mobile}
-        receiver={receiver}
-        replyingTo={replyingTo}
-        onCancelReply={handleCancelReply}
-      />
+      <div ref={composerRef} className="w-full">
+        <InputArea
+          roomId={selectedRoom || ""}
+          sender={currentUser.mobile}
+          receiver={receiver}
+          replyingTo={replyingTo}
+          onCancelReply={handleCancelReply}
+        />
+      </div>
 
       {showMedia && <MediaViewer roomId={selectedRoom || ""} onClose={handleMediaClose} />}
 
