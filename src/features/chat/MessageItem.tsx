@@ -163,6 +163,7 @@ export default function MessageItem({
   };
 
   const mediaUrl = resolveMediaUrl(message.file_url || "");
+  const proxiedMediaUrl = `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`;
 
   if (isDeleting) {
     return (
@@ -266,9 +267,15 @@ export default function MessageItem({
               )}
 
               <img
-                src={`${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`}
+                src={mediaUrl}
                 alt="Shared"
                 className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer transition-transform hover:scale-102"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (target.src !== proxiedMediaUrl) {
+                    target.src = proxiedMediaUrl;
+                  }
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setFullscreenMedia({ url: mediaUrl, type: 'image' });

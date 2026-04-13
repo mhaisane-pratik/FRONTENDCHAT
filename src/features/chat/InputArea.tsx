@@ -308,7 +308,7 @@ export default function InputArea({
   };
 
   return (
-    <div className="w-full flex-shrink-0 z-[90] p-2 sm:p-4 md:px-6 lg:pb-6 bg-transparent">
+    <div className="w-full flex-shrink-0 z-[95] p-2 sm:p-3 md:px-6 bg-transparent sticky bottom-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       <div className="max-w-5xl mx-auto flex flex-col bg-white dark:bg-gray-800 rounded-[28px] shadow-md border border-gray-200 dark:border-gray-700 transition-colors">
         
       {showSuggestions && suggestions.length > 0 && (

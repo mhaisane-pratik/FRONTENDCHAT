@@ -417,17 +417,19 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
-      <ChatHeader
-        receiver={receiver}
-        roomId={selectedRoom || ""}
-        onMediaClick={handleMediaClick}
-        onBack={onBack}
-        onClearChat={handleClearChatSubmit}
-        onSearchAction={() => setIsSearching(true)}
-      />
+      <div className="sticky top-0 z-[120] flex-shrink-0">
+        <ChatHeader
+          receiver={receiver}
+          roomId={selectedRoom || ""}
+          onMediaClick={handleMediaClick}
+          onBack={onBack}
+          onClearChat={handleClearChatSubmit}
+          onSearchAction={() => setIsSearching(true)}
+        />
+      </div>
 
       {isSearching && (
-        <div className="absolute top-[60px] md:top-[72px] left-0 right-0 z-[90] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 md:p-3 flex items-center gap-2 md:gap-3 shadow-sm animate-slideDown">
+        <div className="sticky top-[60px] md:top-[72px] z-[110] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 md:p-3 flex items-center gap-2 md:gap-3 shadow-sm animate-slideDown">
           <button 
             onClick={handleCloseSearch}
             className="p-1.5 md:p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
@@ -469,21 +471,23 @@ export default function ChatWindow({ onBack }: { onBack?: () => void }) {
         </div>
       )}
 
-      <MessageList
-        messages={messages}
-        currentUser={currentUser.mobile}
-        onReply={handleReply}
-        onForward={handleForwardMessage}
-        onRefresh={handleDeleteRefresh}
-        onLoadMore={loadMoreMessages}
-        hasMore={hasMore}
-        loadingMore={loadingMore}
-        searchQuery={isSearching ? searchQuery : ""}
-        highlightedMessageId={isSearching && searchResults.length > 0 ? searchResults[currentSearchIndex] : undefined}
-      />
+      <div className="flex-1 min-h-0">
+        <MessageList
+          messages={messages}
+          currentUser={currentUser.mobile}
+          onReply={handleReply}
+          onForward={handleForwardMessage}
+          onRefresh={handleDeleteRefresh}
+          onLoadMore={loadMoreMessages}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          searchQuery={isSearching ? searchQuery : ""}
+          highlightedMessageId={isSearching && searchResults.length > 0 ? searchResults[currentSearchIndex] : undefined}
+        />
+      </div>
 
       {selectedRoom && typingUsers[selectedRoom] && typingUsers[selectedRoom].size > 0 && (
-        <div className="px-4 py-2 flex gap-2.5 absolute bottom-[80px] md:bottom-[90px] left-0 right-0 pointer-events-none z-[80]">
+        <div className="px-4 py-1.5 flex gap-2.5 pointer-events-none z-[80]">
           <div className="bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-md">
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
