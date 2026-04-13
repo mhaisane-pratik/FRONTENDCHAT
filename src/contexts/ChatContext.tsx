@@ -157,15 +157,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchConfig = async () => {
       try {
         const res = await fetch(`${API_URL}/api/v1/admin/dashboard`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.applications && data.applications.length > 0) {
-            const defaultApp = data.applications.find((app: any) => app.app_name === "ZatChat Default") || data.applications[0];
-            if (defaultApp) {
-              if (defaultApp.allow_group_creation !== undefined) setAllowGroupCreation(defaultApp.allow_group_creation);
-              if (defaultApp.app_name) setAppName(defaultApp.app_name);
-              if (defaultApp.app_logo) setAppLogo(defaultApp.app_logo);
-            }
+        if (!res.ok) {
+          if (res.status !== 404) {
+            console.warn("⚠️ Failed to fetch app config", res.status);
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (data.applications && data.applications.length > 0) {
+          const defaultApp = data.applications.find((app: any) => app.app_name === "ZatChat Default") || data.applications[0];
+          if (defaultApp) {
+            if (defaultApp.allow_group_creation !== undefined) setAllowGroupCreation(defaultApp.allow_group_creation);
+            if (defaultApp.app_name) setAppName(defaultApp.app_name);
+            if (defaultApp.app_logo) setAppLogo(defaultApp.app_logo);
           }
         }
       } catch (err) {
