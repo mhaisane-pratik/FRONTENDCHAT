@@ -1,23 +1,20 @@
-/* ==========================================================================
-   CHAT ITEM – Super compact, 10+ chats visible
+/* ==========================================================================  
+   CHAT ITEM – Compact WhatsApp Style  
    ========================================================================== */
 
 .chat-item {
   display: flex;
   align-items: center;
-  padding: 6px 12px; /* ✅ REDUCED from 8px 16px */
+  padding: 6px 12px;
   cursor: pointer;
   transition: background 0.15s ease;
   position: relative;
+  border-bottom: 1px solid #e9edef;
+  min-height: 60px;
   background: transparent;
-  border-bottom: 1px solid #e9edef; /* ✅ Clear border separator */
-  margin: 0;
-  border-radius: 0;
-  min-height: 60px; /* ✅ Fixed compact height */
 }
 
 .theme-dark .chat-item {
-  background: transparent;
   border-bottom-color: #2a3942;
 }
 
@@ -31,7 +28,7 @@
 
 .chat-item.selected {
   background: #f0f2f5;
-  border-left: 3px solid #25d366; /* ✅ Thinner indicator */
+  border-left: 3px solid #25d366;
   padding-left: 9px;
 }
 
@@ -40,30 +37,24 @@
   border-left-color: #25d366;
 }
 
-/* Remove bottom border from last item */
-.chat-item:last-child {
-  border-bottom: 1px solid #e9edef; /* ✅ Keep border on last item too */
-}
-
-/* Pinned - no special background */
 .chat-item.pinned {
   background: transparent;
 }
 
-/* ===== Avatar – Smaller 40px ===== */
+/* ================= AVATAR ================= */
+
 .chat-avatar-wrapper {
   position: relative;
-  margin-right: 10px; /* ✅ Reduced from 15px */
+  margin-right: 10px;
   flex-shrink: 0;
 }
 
 .chat-avatar,
 .group-avatar {
-  width: 40px; /* ✅ REDUCED from 48px */
+  width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  display: block;
 }
 
 .group-avatar {
@@ -72,17 +63,18 @@
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 18px; /* ✅ REDUCED from 20px */
+  font-size: 18px;
   font-weight: 600;
   text-transform: uppercase;
-  box-shadow: none;
 }
+
+/* Online badge */
 
 .online-badge {
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 10px; /* ✅ REDUCED from 12px */
+  width: 10px;
   height: 10px;
   background: #25d366;
   border: 2px solid #ffffff;
@@ -93,68 +85,66 @@
   border-color: #111b21;
 }
 
-/* ===== Chat content ===== */
+/* ================= CONTENT ================= */
+
 .chat-content {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px; /* ✅ REDUCED from 2px */
 }
 
-.chat-header {
+/* Header */
+
+.chat-item-header{
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 6px; /* ✅ REDUCED from 8px */
+  align-items: center;
+  gap: 6px;
   margin-bottom: 2px;
 }
+
+/* Username container FIXED */
 
 .chat-user-name {
   display: flex;
   align-items: center;
-  gap: 4px; /* ✅ REDUCED from 6px */
-  min-width: 0;
+  gap: 4px;
   flex: 1;
+  min-width: 0;
+  max-width: 70%;
 }
+
+/* Username text FIXED */
 
 .chat-user-name h4 {
   margin: 0;
-  font-size: 15px; /* ✅ REDUCED from 16px */
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: #111b21;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2; /* ✅ Tighter line height */
-  background: transparent;
-  padding: 0;
-  transition: none;
+  width: 100%;
 }
 
 .theme-dark .chat-user-name h4 {
   color: #e9edef;
 }
 
-/* NO hover effect on username */
-.chat-item:hover .chat-user-name h4 {
-  background: transparent;
-  color: #111b21;
-}
-
-.theme-dark .chat-item:hover .chat-user-name h4 {
-  color: #e9edef;
-}
+/* Pin & mute icons */
 
 .pin-badge,
 .mute-badge {
-  font-size: 11px; /* ✅ REDUCED from 13px */
+  font-size: 11px;
   color: #667781;
   opacity: 0.7;
 }
 
+/* Time */
+
 .chat-time {
-  font-size: 11px; /* ✅ REDUCED from 12px */
+  font-size: 11px;
   color: #667781;
   white-space: nowrap;
   flex-shrink: 0;
@@ -164,71 +154,43 @@
   color: #8696a0;
 }
 
-/* ===== Last message preview ===== */
+/* ================= MESSAGE PREVIEW ================= */
+
 .chat-preview {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px; /* ✅ REDUCED from 8px */
+  gap: 6px;
 }
 
 .last-message {
   margin: 0;
-  font-size: 13px; /* ✅ REDUCED from 14px */
+  font-size: 13px;
   color: #667781;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  line-height: 1.2; /* ✅ Tighter line height */
 }
 
 .theme-dark .last-message {
   color: #8696a0;
 }
 
-.you-label {
-  color: #667781;
-  font-weight: normal;
-}
-
-/* --- GROUP CHAT SPECIFIC --- */
-.sender-name {
-  color: #667781;
-  font-weight: 500;
-}
-
-.theme-dark .sender-name {
-  color: #8696a0;
-}
-
-.group-meta {
-  font-size: 12px; /* ✅ REDUCED from 13px */
-  color: #667781;
-  display: flex;
-  align-items: center;
-  gap: 3px; /* ✅ REDUCED from 4px */
-  margin-top: 1px;
-}
-
-.theme-dark .group-meta {
-  color: #8696a0;
-}
-
 /* Unread badge */
+
 .unread-badge {
-  min-width: 18px; /* ✅ REDUCED from 20px */
+  min-width: 18px;
   height: 18px;
-  padding: 0 5px; /* ✅ REDUCED from 6px */
+  padding: 0 5px;
   background: #25d366;
   color: white;
   border-radius: 9px;
-  font-size: 11px; /* ✅ REDUCED from 12px */
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
   flex-shrink: 0;
 }
 
@@ -236,20 +198,20 @@
   background: #00a884;
 }
 
-/* Selected chat unread count shows but different */
-.chat-item.selected .unread-badge {
-  background: #20bd5a;
+/* ================= MUTED CHAT ================= */
+
+.chat-item.muted .chat-user-name h4,
+.chat-item.muted .last-message,
+.chat-item.muted .chat-time {
+  opacity: 0.6;
 }
 
-/* ===== Context menu ===== */
+/* ================= CONTEXT MENU ================= */
+
 .menu-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 99;
-  background: transparent;
 }
 
 .chat-context-menu {
@@ -263,23 +225,10 @@
   overflow: hidden;
   z-index: 100;
   min-width: 200px;
-  animation: slideLeft 0.15s ease;
 }
 
 .theme-dark .chat-context-menu {
   background: #2a3942;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes slideLeft {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
 }
 
 .chat-context-menu button {
@@ -292,9 +241,6 @@
   font-size: 14px;
   color: #111b21;
   transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .theme-dark .chat-context-menu button {
@@ -309,14 +255,8 @@
   background: #374248;
 }
 
-/* ===== Muted chat ===== */
-.chat-item.muted .chat-user-name h4,
-.chat-item.muted .last-message,
-.chat-item.muted .chat-time {
-  opacity: 0.6;
-}
+/* ================= MOBILE ================= */
 
-/* Mobile responsive */
 @media (max-width: 768px) {
   .chat-item {
     padding: 8px 10px;
@@ -327,10 +267,6 @@
   .group-avatar {
     width: 38px;
     height: 38px;
-  }
-
-  .group-avatar {
-    font-size: 16px;
   }
 
   .chat-user-name h4 {
@@ -344,4 +280,21 @@
   .chat-time {
     font-size: 10px;
   }
+}
+
+.last-message.bold {
+  font-weight: 600;
+  color: #111b21;
+}
+
+.last-message.bold {
+  font-weight: 600;
+  color: #111b21;
+}
+
+.theme-dark .last-message.bold {
+  color: #e9edef;
+}
+.bold-name {
+  font-weight: 700;
 }

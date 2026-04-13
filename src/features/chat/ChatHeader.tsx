@@ -2,49 +2,79 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChat } from "../../contexts/ChatContext";
 import { socket } from "../../api/socket";
-import { FaSignOutAlt, FaImage, FaInfoCircle, FaArrowLeft } from "react-icons/fa";
 import GroupInfoModal from "./GroupInfoModal";
-import "./ChatHeader.css";
+import UserProfileModal from "./UserProfileModal";
+import { resolveMediaUrl } from "../../utils/mediaUrl";
+
+import SaveContactModal from "./SaveContactModal";
+
+import {
+  LogOut,
+  Image,
+  Info,
+  ArrowLeft,
+  Users,
+  MoreVertical,
+  Video,
+  Crown,
+  Shield,
+  UserCircle2,
+  Search,
+  Clock,
+  UserPlus
+} from 'lucide-react';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const API_URL = (import.meta as any).env.VITE_API_URL as string;
 
 interface ChatHeaderProps {
   receiver: string;
   roomId: string;
   onMediaClick: () => void;
-  onBack?: () => void; // ✅ Added onBack prop for mobile
+  onBack?: () => void;
+  onClearChat?: () => void;
+  onSearchAction?: () => void;
 }
-
-const API_URL = import.meta.env.VITE_API_URL as string;
 
 export default function ChatHeader({
   receiver,
   roomId,
   onMediaClick,
   onBack,
+  onClearChat,
+  onSearchAction,
 }: ChatHeaderProps) {
   const navigate = useNavigate();
-  const { onlineUsers, setCurrentUser, setSelectedRoom, chatRooms, currentUser } = useChat();
+  const { onlineUsers, setCurrentUser, setSelectedRoom, chatRooms, currentUser, userProfiles, typingUsers, getDisplayName } = useChat();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const [receiverInfo, setReceiverInfo] = useState<any>(null);
+  const [showOptions, setShowOptions] = useState(false);
+  const [showSaveContact, setShowSaveContact] = useState(false);
 
-  // Find the room
   const room = chatRooms.find((r) => r.id === roomId);
   const isGroup = room?.is_group || false;
   const memberCount = room?.member_count;
   const groupIcon = room?.group_icon;
-  
-  // Only check online status for 1-1 chats
+  const isAdmin = room?.created_by === currentUser?.mobile;
+
+  const cachedProfile = !isGroup ? userProfiles.get(receiver) : null;
+  const rawFallbackName = cachedProfile?.display_name || receiverInfo?.display_name || receiver;
+  const displayName = isGroup
+    ? room?.group_name
+    : getDisplayName(receiver, rawFallbackName);
+
   const isOnline = !isGroup && onlineUsers.has(receiver);
 
   useEffect(() => {
-    // ✅ Only fetch user info for 1-1 chats, not groups
-    if (!isGroup && receiver && receiver !== currentUser?.username) {
+    if (!isGroup && receiver && receiver !== currentUser?.mobile && !cachedProfile) {
       fetchReceiverInfo();
     }
-  }, [receiver, isGroup, currentUser]);
+  }, [receiver, isGroup, currentUser, cachedProfile]);
 
   const fetchReceiverInfo = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/users/${receiver}`);
+      const res = await fetch(`${API_URL}/api/v1/users/${encodeURIComponent(receiver)}`);
       if (res.ok) {
         const data = await res.json();
         setReceiverInfo(data);
@@ -55,147 +85,325 @@ export default function ChatHeader({
   };
 
   const handleLogout = () => {
-    console.log("🚪 Logging out...");
-
     localStorage.removeItem("chatUser");
     localStorage.removeItem("selectedRoom");
-    console.log("🧹 Cleared localStorage");
-
-    if (roomId) {
-      socket.emit("leave_room", roomId);
-    }
-
+    if (roomId) socket.emit("leave_room", roomId);
     socket.disconnect();
-
     setCurrentUser(null);
     setSelectedRoom(null);
-
     navigate("/chat-login");
-    console.log("✅ Logged out successfully");
   };
 
   const handleHeaderClick = () => {
     if (isGroup) {
       setShowGroupInfo(true);
+      return;
     }
+    setShowUserProfile(true);
   };
 
-  const formatLastSeen = (lastSeen: string): string => {
-    const now = new Date();
-    const last = new Date(lastSeen);
-    const diffMs = now.getTime() - last.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return last.toLocaleDateString();
+  const handleClearChat = () => {
+    if (onClearChat) {
+      onClearChat();
+      setShowOptions(false);
+    }
   };
 
   return (
     <>
-      <div 
-        className={`chat-header ${isGroup ? 'clickable' : ''}`}
+      <div
+        className={`
+          flex justify-between items-center z-[100]
+          bg-white dark:bg-gray-800
+          border-b border-gray-200 dark:border-gray-700
+          px-3 md:px-6 py-2 md:py-3 h-[60px] md:h-[72px] box-border
+          transition-all duration-300
+          shadow-sm
+          w-full flex-shrink-0
+          cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700
+        `}
         onClick={handleHeaderClick}
       >
-        <div className="receiver-info">
-          {/* ✅ Back button – shown only on mobile when onBack is provided */}
+        {/* Left Section */}
+        <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 max-w-[calc(100%-120px)] md:max-w-none">
+          {/* Mobile back button */}
           {onBack && (
             <button
-              className="back-btn-mobile"
-              onClick={(e) => {
-                e.stopPropagation();
-                onBack();
-              }}
+              className={`
+                flex md:hidden items-center justify-center
+                w-8 h-8 rounded-lg
+                bg-gray-100 dark:bg-gray-700
+                text-gray-600 dark:text-gray-300
+                hover:bg-gray-200 dark:hover:bg-gray-600
+                active:scale-95
+                transition-all duration-200
+                flex-shrink-0
+              `}
+              onClick={(e) => { e.stopPropagation(); onBack(); }}
               aria-label="Back"
             >
-              <FaArrowLeft />
+              <ArrowLeft size={18} />
             </button>
           )}
 
-          {/* ✅ Show group icon OR user avatar */}
-          {isGroup ? (
-            <div className="group-header-icon">{groupIcon || "👥"}</div>
-          ) : (
-            <img
-              src={
-                receiverInfo?.profile_picture ||
-                `https://ui-avatars.com/api/?name=${receiver}&background=random&size=40`
-              }
-              alt={receiver}
-              className="receiver-avatar"
-            />
-          )}
-          
-          <div className="receiver-details">
-            <h3 className="receiver-name">
-              {isGroup ? room?.group_name : receiverInfo?.display_name || receiver}
-            </h3>
-            
-            {/* ✅ Show group status OR online status */}
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
             {isGroup ? (
-              <span className="group-status">
-                👥 Group · {memberCount || 0} member{memberCount !== 1 ? "s" : ""}
-              </span>
+              <div
+                className={`
+                  w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl
+                  bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500
+                  flex items-center justify-center text-white
+                  shadow-md
+                  text-base md:text-xl
+                  ring-2 ring-white dark:ring-gray-800
+                `}
+              >
+                {groupIcon || <Users size={20} className="md:w-6 md:h-6" />}
+              </div>
             ) : (
-              <span className={`online-status ${isOnline ? "online" : "offline"}`}>
-                {isOnline 
-                  ? "Online" 
-                  : receiverInfo?.last_seen 
-                    ? `Last seen ${formatLastSeen(receiverInfo.last_seen)}` 
-                    : "Offline"}
-              </span>
+              <>
+                <img
+                  src={
+                    resolveMediaUrl(cachedProfile?.profile_picture || receiverInfo?.profile_picture) ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || '')}&background=0D9488&color=fff&size=48&font-size=0.33&bold=true`
+                  }
+                  alt={receiver}
+                  className={`
+                    w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl object-cover
+                    ring-2 ring-white dark:ring-gray-800
+                    shadow-md
+                  `}
+                />
+                {!isGroup && (
+                  <span
+                    className={`
+                      absolute -bottom-0.5 -right-0.5
+                      w-3 h-3 md:w-3.5 md:h-3.5 rounded-full
+                      ${isOnline
+                        ? "bg-green-500 ring-2 ring-white dark:ring-gray-800"
+                        : "bg-gray-400 ring-2 ring-white dark:ring-gray-800"
+                      }
+                    `}
+                  />
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="flex flex-col min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <h3
+                className={`
+                  font-semibold truncate text-gray-900 dark:text-white
+                  text-sm md:text-base lg:text-lg
+                  max-w-[150px] xs:max-w-[200px] sm:max-w-[250px] md:max-w-[300px]
+                `}
+              >
+                {displayName}
+              </h3>
+              {isGroup && isAdmin && (
+                <Crown size={14} className="text-amber-500 flex-shrink-0 md:w-4 md:h-4" />
+              )}
+              {isGroup && room?.is_verified && (
+                <Shield size={14} className="text-blue-500 flex-shrink-0 md:w-4 md:h-4" />
+              )}
+            </div>
+            
+            {isGroup ? (
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs md:text-sm">
+                <Users size={12} className="flex-shrink-0 md:w-3.5 md:h-3.5" />
+                <span className="truncate max-w-[80px] xs:max-w-[120px] sm:max-w-[150px]">
+                  {memberCount || 0} member{memberCount !== 1 ? "s" : ""}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mx-1 hidden xs:inline" />
+                <span className="hidden xs:inline truncate max-w-[60px]">
+                  {room?.is_public ? 'Public' : 'Private'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs md:text-sm">
+                {isOnline ? (
+                  <div className="flex items-center gap-1 text-green-600 dark:text-green-400 min-w-0">
+                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="font-medium truncate max-w-[60px] xs:max-w-[80px]">Online</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 min-w-0">
+                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-gray-400 flex-shrink-0" />
+                    <span className="font-medium truncate max-w-[60px] xs:max-w-[80px]">Offline</span>
+                  </div>
+                )}
+                {typingUsers[roomId] && typingUsers[roomId].has(receiver) && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600 mx-1 flex-shrink-0" />
+                    <span className="text-blue-500 dark:text-blue-400 font-medium animate-pulse truncate max-w-[60px] xs:max-w-[80px]">
+                      typing...
+                    </span>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>
 
-        <div className="header-actions">
-          {/* ✅ Show group info button for groups */}
+        {/* Right Section: Actions */}
+        <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
+          <button
+            className={`
+              hidden sm:flex items-center justify-center
+              w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl
+              bg-gray-100 dark:bg-gray-700
+              text-gray-600 dark:text-gray-300
+              hover:bg-gray-200 dark:hover:bg-gray-600
+              hover:text-indigo-600 dark:hover:text-indigo-400
+              active:scale-95
+              transition-all duration-200
+              flex-shrink-0
+            `}
+            onClick={(e) => { e.stopPropagation(); }}
+            title="Video call"
+          >
+            <Video size={16} className="md:w-[18px] md:h-[18px]" />
+          </button>
+
           {isGroup && (
             <button
-              className="header-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowGroupInfo(true);
-              }}
+              className={`
+                flex items-center justify-center
+                w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl
+                bg-gray-100 dark:bg-gray-700
+                text-gray-600 dark:text-gray-300
+                hover:bg-gray-200 dark:hover:bg-gray-600
+                hover:text-indigo-600 dark:hover:text-indigo-400
+                active:scale-95
+                transition-all duration-200
+                flex-shrink-0
+              `}
+              onClick={(e) => { e.stopPropagation(); setShowGroupInfo(true); }}
               title="Group info"
             >
-              <FaInfoCircle />
+              <Info size={16} className="md:w-[18px] md:h-[18px]" />
             </button>
           )}
-          
+
           <button
-            className="header-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMediaClick();
-            }}
-            title="View shared media"
+            className={`
+              flex items-center justify-center
+              w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl
+              bg-gray-100 dark:bg-gray-700
+              text-gray-600 dark:text-gray-300
+              hover:bg-gray-200 dark:hover:bg-gray-600
+              hover:text-emerald-600 dark:hover:text-emerald-400
+              active:scale-95
+              transition-all duration-200
+              flex-shrink-0
+            `}
+            onClick={(e) => { e.stopPropagation(); onMediaClick(); }}
+            title="Shared media"
           >
-            <FaImage />
+            <Image size={16} className="md:w-[18px] md:h-[18px]" />
           </button>
-          
-          <button
-            className="header-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleLogout();
-            }}
-            title="Logout"
-          >
-            <FaSignOutAlt />
-          </button>
+
+          <div className="relative">
+            <button
+              className={`
+                flex items-center justify-center
+                w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl
+                bg-gray-100 dark:bg-gray-700
+                text-gray-600 dark:text-gray-300
+                hover:bg-gray-200 dark:hover:bg-gray-600
+                active:scale-95
+                transition-all duration-200
+                flex-shrink-0
+              `}
+              onClick={(e) => { e.stopPropagation(); setShowOptions(!showOptions); }}
+              title="More options"
+            >
+              <MoreVertical size={16} className="md:w-[18px] md:h-[18px]" />
+            </button>
+
+            {showOptions && (
+              <>
+                <div 
+                  className="fixed inset-0 z-[999]" 
+                  onClick={() => setShowOptions(false)} 
+                />
+                <div className="absolute right-0 top-10 md:top-12 z-[1000] bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[160px] md:min-w-[180px] animate-fadeIn">
+                  {!isGroup && (
+                    <button
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setShowSaveContact(true); setShowOptions(false); }}
+                    >
+                      <UserPlus size={14} className="md:w-4 md:h-4 flex-shrink-0" />
+                      <span className="truncate">Add / Edit Contact</span>
+                    </button>
+                  )}
+                  {isGroup && (
+                    <button
+                      className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setShowGroupInfo(true); setShowOptions(false); }}
+                    >
+                      <Info size={14} className="md:w-4 md:h-4 flex-shrink-0" />
+                      <span className="truncate">View Info</span>
+                    </button>
+                  )}
+                  <button
+                    className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); if (onSearchAction) onSearchAction(); setShowOptions(false); }}
+                  >
+                    <Search size={14} className="md:w-4 md:h-4 flex-shrink-0" />
+                    <span className="truncate">Search messages</span>
+                  </button>
+                  <button
+                    className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleClearChat(); }}
+                  >
+                    <Clock size={14} className="md:w-4 md:h-4 flex-shrink-0" />
+                    <span className="truncate">Clear chat</span>
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                  <button
+                    className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleLogout(); setShowOptions(false); }}
+                  >
+                    <LogOut size={14} className="md:w-4 md:h-4 flex-shrink-0" />
+                    <span className="truncate">Logout</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Group Info Modal */}
+      {showSaveContact && !isGroup && (
+        <SaveContactModal 
+          contactUsername={receiver} 
+          defaultName={displayName === receiver ? "" : displayName}
+          onClose={() => setShowSaveContact(false)} 
+        />
+      )}
+
       {showGroupInfo && isGroup && (
-        <GroupInfoModal
-          groupId={roomId}
-          onClose={() => setShowGroupInfo(false)}
+        <GroupInfoModal groupId={roomId} onClose={() => setShowGroupInfo(false)} />
+      )}
+
+      {!isGroup && (
+        <UserProfileModal
+          isOpen={showUserProfile}
+          onClose={() => setShowUserProfile(false)}
+          profile={{
+            mobile: receiver,
+            display_name: displayName,
+            bio: cachedProfile?.bio || receiverInfo?.bio,
+            profile_picture:
+              cachedProfile?.profile_picture ||
+              receiverInfo?.profile_picture,
+            is_online: isOnline,
+            last_seen: cachedProfile?.last_seen || receiverInfo?.last_seen,
+          }}
         />
       )}
     </>

@@ -40,17 +40,18 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
       console.log("📸 Loading media for room:", roomId);
 
       const response = await fetch(
-        `${API_URL}/api/v1/chats/history/${roomId}?username=${currentUser?.username}`
+        `${API_URL}/api/v1/chats/history/${roomId}?mobile=${currentUser?.mobile}`
       );
 
       if (!response.ok) {
         throw new Error("Failed to load media");
       }
 
-      const messages = await response.json();
+      const data = await response.json();
+      const messagesArray = Array.isArray(data) ? data : data.messages || [];
 
       // Filter messages with files
-      const mediaFiles = messages
+      const mediaFiles = messagesArray
         .filter((msg: any) => msg.file_url && !msg.is_deleted)
         .map((msg: any) => ({
           id: msg.id,
@@ -96,7 +97,7 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
 
   const handleMediaClick = (mediaItem: MediaFile) => {
     setSelectedMedia(mediaItem);
-    if (mediaItem.message_type === "image") {
+    if (mediaItem.message_type === "image" || mediaItem.message_type === "video") {
       setShowFullscreen(true);
     }
   };
@@ -272,7 +273,11 @@ export default function MediaViewer({ roomId, onClose }: MediaViewerProps) {
             >
               ✕
             </button>
-            <img src={selectedMedia.file_url} alt={selectedMedia.file_name} />
+            {selectedMedia.message_type === "image" ? (
+              <img src={selectedMedia.file_url} alt={selectedMedia.file_name} />
+            ) : (
+              <video src={selectedMedia.file_url} controls autoPlay className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" />
+            )}
             <div className="fullscreen-info">
               <div className="fullscreen-details">
                 <span className="fullscreen-name">{selectedMedia.file_name}</span>

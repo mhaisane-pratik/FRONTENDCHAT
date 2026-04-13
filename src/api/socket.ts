@@ -4,6 +4,9 @@ import { io, Socket } from "socket.io-client";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL as string;
 
+// 🔐 API KEY (same as backend .env)
+const API_KEY = "ZATCHAT_PRATEEK9373";
+
 export const socket: Socket = io(SOCKET_URL, {
   autoConnect: true,
   reconnection: true,
@@ -12,20 +15,25 @@ export const socket: Socket = io(SOCKET_URL, {
   reconnectionDelayMax: 5000,
   timeout: 20000,
   transports: ["websocket", "polling"],
+
+  // 🔥 IMPORTANT: Send API Key to backend
+  auth: {
+    apiKey: API_KEY,
+  },
 });
 
-// Connection event listeners
+// ================= CONNECTION EVENTS =================
+
 socket.on("connect", () => {
   console.log("✅ Socket Connected:", socket.id);
-  
-  // Rejoin room if there's a stored room
+
   const savedRoom = localStorage.getItem("selectedRoom");
   const savedUser = localStorage.getItem("chatUser");
-  
+
   if (savedRoom && savedUser) {
     console.log("🔄 Auto-rejoining room:", savedRoom);
     socket.emit("join_room", savedRoom);
-    socket.emit("user_join", { username: savedUser });
+    socket.emit("user_join", { mobile: savedUser });
   }
 });
 
@@ -39,15 +47,14 @@ socket.on("connect_error", (error) => {
 
 socket.on("reconnect", (attemptNumber) => {
   console.log(`🔄 Reconnected after ${attemptNumber} attempts`);
-  
-  // Rejoin room after reconnection
+
   const savedRoom = localStorage.getItem("selectedRoom");
   const savedUser = localStorage.getItem("chatUser");
-  
+
   if (savedRoom && savedUser) {
     console.log("🔄 Rejoining room after reconnect:", savedRoom);
     socket.emit("join_room", savedRoom);
-    socket.emit("user_join", { username: savedUser });
+    socket.emit("user_join", { mobile: savedUser });
   }
 });
 

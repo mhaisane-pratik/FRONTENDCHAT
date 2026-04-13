@@ -1,55 +1,62 @@
 import React from "react";
 import { useChat } from "../../contexts/ChatContext";
 import ChatItem from "./ChatItem";
-import "./ChatList.css";
 
 interface ChatListProps {
   rooms: any[];
+  searchTerm?: string;
+  activeFilter?: string;
 }
 
 export default function ChatList({ rooms }: ChatListProps) {
-  const { selectedRoom, setSelectedRoom } = useChat();
+  const { currentUser, selectedRoom, setSelectedRoom, userProfiles, typingUsers, getDisplayName } = useChat();
 
-  if (rooms.length === 0) {
+  if (!currentUser) return null;
+
+  if (!rooms || rooms.length === 0) {
     return (
-      <div className="empty-chat-list">
-        
-        <p>No chats yet</p>
-        <span>Start a new conversation or create a group</span>
+      <div className="flex flex-col items-center justify-center p-20 text-center min-h-[400px]">
+        <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">No chats yet</p>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Start a new conversation</span>
       </div>
     );
   }
 
-  // Separate pinned and unpinned
-  const pinnedRooms = rooms.filter((r) => r.is_pinned);
-  const unpinnedRooms = rooms.filter((r) => !r.is_pinned);
-
   return (
-    <div className="chat-list">
-      {/* Pinned chats */}
-      {pinnedRooms.length > 0 && (
-        <>
-          {pinnedRooms.map((room) => (
-            <ChatItem
-              key={room.id}
-              room={room}
-              isSelected={selectedRoom === room.id}
-              onClick={() => setSelectedRoom(room.id)}
-            />
-          ))}
-          {unpinnedRooms.length > 0 && <div className="chat-divider" />}
-        </>
-      )}
+    <div className="flex-1 overflow-y-auto">
+      {rooms.map((room) => {
+        const isGroup = room.is_group === true;
+        const otherMobile = !isGroup
+          ? room.other_user ||
+            (room.participant_1 === currentUser.mobile
+              ? room.participant_2
+              : room.participant_1)
+          : "";
+        const profile = userProfiles.get(otherMobile);
+        const fallbackName = profile?.display_name || otherMobile || "Unknown";
+        const displayName = isGroup
+          ? room.group_name || "Group"
+          : getDisplayName(otherMobile, fallbackName);
 
-      {/* Regular chats */}
-      {unpinnedRooms.map((room) => (
-        <ChatItem
-          key={room.id}
-          room={room}
-          isSelected={selectedRoom === room.id}
-          onClick={() => setSelectedRoom(room.id)}
-        />
-      ))}
+        return (
+          <ChatItem
+            key={room.id}
+            roomId={room.id}
+            displayName={displayName}
+            avatarUrl={profile?.profile_picture}
+            lastMessage={room.last_message}
+            lastMessageSender={room.last_message_sender}
+            lastMessageTime={room.last_message_time}
+            unreadCount={room.unread_count}
+            isGroup={isGroup}
+            isPinned={room.is_pinned}
+            isMuted={room.is_muted}
+            isSelected={selectedRoom === room.id}
+            typingUsers={typingUsers[room.id] ? Array.from(typingUsers[room.id]) : undefined}
+            onClick={() => setSelectedRoom(room.id)}
+          />
+        );
+      })}
     </div>
   );
 }

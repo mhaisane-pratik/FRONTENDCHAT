@@ -53,7 +53,7 @@ export default function ForwardModal({ messages, onClose }: ForwardModalProps) {
         body: JSON.stringify({
           messageIds,
           toRooms,
-          sender: currentUser?.username,
+          sender: currentUser?.mobile,
         }),
       });
 

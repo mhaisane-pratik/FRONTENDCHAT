@@ -7,8 +7,9 @@ interface CreateGroupModalProps {
   onClose: () => void;
 }
 
+// User interface for group selection
 interface User {
-  username: string;
+  mobile: string;
   display_name: string;
   profile_picture?: string;
   is_online?: boolean;
@@ -26,143 +27,51 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   const [error, setError] = useState("");
   const [step, setStep] = useState<"select" | "name">("select");
 
-  // ✅ FIX: Disable blur on parent elements when modal opens
-  useEffect(() => {
-    const originalBodyFilter = document.body.style.filter;
-    const originalBodyBackdrop = document.body.style.backdropFilter;
-    
-    document.body.style.filter = 'none';
-    document.body.style.backdropFilter = 'none';
-    document.body.style.overflow = 'hidden'; // Prevent background scroll
-    
-    const chatLayout = document.querySelector('.chat-layout') as HTMLElement;
-    const sidebar = document.querySelector('.sidebar') as HTMLElement;
-    const originalLayoutFilter = chatLayout?.style.filter;
-    const originalLayoutBackdrop = chatLayout?.style.backdropFilter;
-    const originalSidebarFilter = sidebar?.style.filter;
-    const originalSidebarBackdrop = sidebar?.style.backdropFilter;
-    
-    if (chatLayout) {
-      chatLayout.style.filter = 'none';
-      chatLayout.style.backdropFilter = 'none';
-    }
-    
-    if (sidebar) {
-      sidebar.style.filter = 'none';
-      sidebar.style.backdropFilter = 'none';
-    }
-
-    return () => {
-      document.body.style.filter = originalBodyFilter;
-      document.body.style.backdropFilter = originalBodyBackdrop;
-      document.body.style.overflow = '';
-      
-      if (chatLayout) {
-        chatLayout.style.filter = originalLayoutFilter || '';
-        chatLayout.style.backdropFilter = originalLayoutBackdrop || '';
-      }
-      
-      if (sidebar) {
-        sidebar.style.filter = originalSidebarFilter || '';
-        sidebar.style.backdropFilter = originalSidebarBackdrop || '';
-      }
-    };
-  }, []);
-
+  // --- Only show users the current user has chatted with! ---
   useEffect(() => {
     loadAvailableUsers();
-  }, []);
+  }, [chatRooms, currentUser?.mobile]);
 
-  const loadAvailableUsers = async () => {
+  const loadAvailableUsers = () => {
     setLoading(true);
     setError("");
-    
-    try {
-      console.log("🔍 Loading available users...");
-      console.log("Current user:", currentUser?.username);
-      console.log("Chat rooms:", chatRooms.length);
 
-      const usersFromRooms = new Set<string>();
-      
-      chatRooms.forEach((room) => {
-        console.log("Processing room:", room);
-        
-        if (room.is_group) {
-          return;
-        }
-        
-        if (room.other_user && room.other_user !== currentUser?.username) {
+    // Get chat partners from chatRooms (no groups)
+    const usersFromRooms = new Set<string>();
+    chatRooms.forEach((room) => {
+      if (!room.is_group) {
+        // For 1:1 chats, get the other user (not self)
+        if (room.other_user &&
+            room.other_user !== currentUser?.mobile &&
+            room.other_user.length > 2 // prevent empty
+        ) {
           usersFromRooms.add(room.other_user);
         }
-        
-        if (room.participant_1 && room.participant_1 !== currentUser?.username) {
-          usersFromRooms.add(room.participant_1);
-        }
-        if (room.participant_2 && room.participant_2 !== currentUser?.username) {
-          usersFromRooms.add(room.participant_2);
-        }
-      });
-
-      console.log("Users from rooms:", Array.from(usersFromRooms));
-
-      try {
-        const response = await fetch(`${API_URL}/api/v1/users`);
-        
-        if (response.ok) {
-          const allUsers = await response.json();
-          console.log("✅ Users from API:", allUsers);
-          
-          const filteredUsers = allUsers
-            .filter((u: any) => u.username !== currentUser?.username)
-            .map((u: any) => ({
-              username: u.username,
-              display_name: u.display_name || u.username,
-              profile_picture: u.profile_picture,
-              is_online: u.is_online,
-            }));
-
-          setAvailableUsers(filteredUsers);
-          console.log("✅ Loaded", filteredUsers.length, "users");
-          
-          if (filteredUsers.length === 0) {
-            setError("No other users found. Create more accounts to make groups.");
-          }
-          
-          setLoading(false);
-          return;
-        } else {
-          console.warn("⚠️ API returned:", response.status, response.statusText);
-        }
-      } catch (apiError) {
-        console.error("❌ Failed to fetch from API:", apiError);
       }
+    });
 
-      const userList: User[] = Array.from(usersFromRooms).map((username) => ({
-        username,
-        display_name: username,
-      }));
+    // Convert to array of User objects
+    const userList: User[] = Array.from(usersFromRooms).map((mobile) => ({
+      mobile,
+      display_name: mobile,
+      // Optionally add profile_picture or is_online if you want
+    }));
 
-      setAvailableUsers(userList);
-      console.log("✅ Loaded", userList.length, "users from rooms");
-      
-      if (userList.length === 0) {
-        setError("No users available. Start a chat first to add members to a group.");
-      }
-    } catch (err) {
-      console.error("❌ Failed to load users:", err);
-      setError("Failed to load users. Please try again.");
-    } finally {
-      setLoading(false);
+    setAvailableUsers(userList);
+
+    if (userList.length === 0) {
+      setError("No users available. Start a chat first to add members to a group.");
     }
+    setLoading(false);
   };
 
-  const toggleUser = (username: string) => {
+  const toggleUser = (mobile: string) => {
     setSelectedUsers((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(username)) {
-        newSet.delete(username);
+      if (newSet.has(mobile)) {
+        newSet.delete(mobile);
       } else {
-        newSet.add(username);
+        newSet.add(mobile);
       }
       return newSet;
     });
@@ -193,17 +102,9 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
 
     try {
       const timestamp = Date.now();
-      const groupId = `group_${currentUser?.username}_${timestamp}`;
-
-      console.log("🏠 Creating group:", {
-        groupId,
-        name: groupName,
-        members: Array.from(selectedUsers),
-        creator: currentUser?.username,
-      });
-
+      const groupId = `group_${currentUser?.mobile}_${timestamp}`;
       const allParticipants = [
-        currentUser?.username,
+        currentUser?.mobile,
         ...Array.from(selectedUsers),
       ].filter(Boolean);
 
@@ -212,13 +113,13 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomId: groupId,
-          participant1: currentUser?.username,
+          participant1: currentUser?.mobile,
           participant2: allParticipants.join(","),
           isGroup: true,
           groupName: groupName.trim(),
           groupIcon: getGroupIcon(groupName),
           memberCount: allParticipants.length,
-          createdBy: currentUser?.username,
+          createdBy: currentUser?.mobile,
         }),
       });
 
@@ -228,23 +129,18 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
       }
 
       const result = await roomRes.json();
-      console.log("✅ Group created:", result);
-
       socket.emit("new_group_created", {
         groupId,
         groupName: groupName.trim(),
         members: allParticipants,
-        creator: currentUser?.username,
+        creator: currentUser?.mobile,
       });
 
       onClose();
-      
       await refreshRooms();
-      
       setTimeout(() => {
         setSelectedRoom(groupId);
       }, 800);
-      
       alert(`✅ Group "${groupName}" created with ${allParticipants.length} members!`);
     } catch (err: any) {
       console.error("❌ Failed to create group:", err);
@@ -260,7 +156,7 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   };
 
   const filteredUsers = availableUsers.filter((user) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.mobile.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.display_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -323,25 +219,25 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                     ) : (
                       filteredUsers.map((user) => (
                         <div
-                          key={user.username}
+                          key={user.mobile}
                           className={`user-item ${
-                            selectedUsers.has(user.username) ? "selected" : ""
+                            selectedUsers.has(user.mobile) ? "selected" : ""
                           }`}
-                          onClick={() => toggleUser(user.username)}
+                          onClick={() => toggleUser(user.mobile)}
                         >
                           <img
                             src={
                               user.profile_picture ||
-                              `https://ui-avatars.com/api/?name=${user.username}&background=random`
+                              `https://ui-avatars.com/api/?name=${user.mobile}&background=random`
                             }
-                            alt={user.username}
+                            alt={user.mobile}
                             className="user-avatar"
                           />
                           <div className="user-info">
                             <span className="user-name">{user.display_name}</span>
-                            <span className="user-username">@{user.username}</span>
+                            <span className="user-mobile">@{user.mobile}</span>
                           </div>
-                          {selectedUsers.has(user.username) && (
+                          {selectedUsers.has(user.mobile) && (
                             <span className="check-icon">✓</span>
                           )}
                         </div>
@@ -353,7 +249,6 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
 
               {error && <div className="error-message">{error}</div>}
             </div>
-
             <div className="modal-footer">
               <button className="cancel-btn" onClick={onClose} disabled={loading}>
                 Cancel
@@ -368,7 +263,6 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
             </div>
           </>
         )}
-
         {step === "name" && (
           <>
             <div className="modal-body">
@@ -377,7 +271,6 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                   {getGroupIcon(groupName || "Group")}
                 </div>
               </div>
-
               <div className="input-group">
                 <label htmlFor="groupName">Group Name</label>
                 <input
@@ -394,25 +287,22 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                 />
                 <span className="char-count">{groupName.length}/50</span>
               </div>
-
               <div className="members-summary">
                 <h4>Members ({selectedUsers.size + 1})</h4>
                 <div className="members-chips">
                   <div className="member-chip you">You (Admin)</div>
-                  {Array.from(selectedUsers).map((username) => (
-                    <div key={username} className="member-chip">
-                      {username}
+                  {Array.from(selectedUsers).map((mobile) => (
+                    <div key={mobile} className="member-chip">
+                      {mobile}
                     </div>
                   ))}
                 </div>
               </div>
-
               {error && <div className="error-message">{error}</div>}
             </div>
-
             <div className="modal-footer">
-              <button 
-                className="cancel-btn" 
+              <button
+                className="cancel-btn"
                 onClick={() => setStep("select")}
                 disabled={loading}
               >

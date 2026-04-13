@@ -1,78 +1,102 @@
-// File: video-call-main/src/features/chat/MessageItem.tsx
-
 import React, { useState, useRef, useEffect } from "react";
 import { Message } from "./ChatWindow";
-import "./MessageItem.css";
+import { socket } from "../../api/socket";
+import { useChat } from "../../contexts/ChatContext";
 
 interface MessageItemProps {
   message: Message;
   isSent: boolean;
-  currentUser: string; // ✅ This is now just a string (username)
+  currentUser: string;
   onReply: (message: Message) => void;
   onDelete?: (messageId: string) => void;
   onForward?: (message: Message) => void;
+  searchQuery?: string;
+  isHighlighted?: boolean;
   onRefresh: () => void;
 }
 
-const API_URL = import.meta.env.VITE_API_URL as string;
+const API_URL = (import.meta as any).env.VITE_API_URL as string;
 
 export default function MessageItem({ 
   message, 
   isSent, 
-  currentUser, // ✅ This is the username string
+  currentUser,
   onReply, 
   onDelete,
   onForward,
+  searchQuery,
+  isHighlighted,
   onRefresh 
 }: MessageItemProps) {
+  const { getDisplayName } = useChat();
   const [showActions, setShowActions] = useState(false);
-  const [imageFullscreen, setImageFullscreen] = useState(false);
+  const [fullscreenMedia, setFullscreenMedia] = useState<{url: string, type: string} | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Debug log to verify currentUser
-  useEffect(() => {
-    console.log("🔍 MessageItem rendered:", {
-      messageId: message.id.substring(0, 8),
-      currentUser: currentUser,
-      currentUserType: typeof currentUser,
-      isSent: isSent
-    });
-  }, [message.id, currentUser]);
-
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+    let safeString = dateString;
+    if (!safeString.includes('Z') && !safeString.includes('+')) {
+      safeString = safeString.replace(' ', 'T') + 'Z';
+    }
+    const date = new Date(safeString);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   const getMessageStatus = () => {
     if (!isSent) return null;
-
     if (message.is_seen) {
-      return <span className="status-icon seen">✓✓</span>;
+      return <span className="text-cyan-300 font-bold text-[11px] ml-1 drop-shadow-sm leading-none">✓✓</span>;
     }
     if (message.is_delivered) {
-      return <span className="status-icon delivered">✓✓</span>;
+      return <span className="text-white/90 text-[11px] ml-1 font-medium leading-none">✓✓</span>;
     }
-    return <span className="status-icon sent">✓</span>;
+    return <span className="text-white/60 text-[11px] ml-1 font-medium leading-none">✓</span>;
   };
 
-  // Click outside to close actions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowActions(false);
       }
     };
-
     if (showActions) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showActions]);
+
+  useEffect(() => {
+    if (isHighlighted && wrapperRef.current) {
+      wrapperRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
+
+  const renderMessageContent = (text: string | null | undefined) => {
+    if (!text) return null;
+    if (!searchQuery) return text;
+    try {
+      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+      return parts.map((part, i) => {
+        if (part.toLowerCase() === searchQuery.toLowerCase()) {
+          return (
+            <mark 
+              key={i} 
+              className={`${isHighlighted ? 'bg-orange-500 text-white animate-pulse' : 'bg-yellow-300 text-black'} rounded-sm px-[2px] shadow-sm transition-colors duration-300`}
+            >
+              {part}
+            </mark>
+          );
+        }
+        return part;
+      });
+    } catch (e) {
+      return text;
+    }
+  };
 
   const handleMessageClick = () => {
     setShowActions(!showActions);
@@ -87,80 +111,32 @@ export default function MessageItem({
         setShowActions(false);
       }
     } catch (err) {
-      console.error("Failed to copy:", err);
       showNotification("Failed to copy message", "error");
     }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // ✅ Verify currentUser is valid
-    if (!currentUser || currentUser === "undefined" || currentUser === "null") {
-      console.error("❌ Invalid currentUser:", currentUser);
-      showNotification("Error: User session invalid", "error");
-      return;
-    }
-
-    console.log("🗑️ Delete initiated:", {
-      messageId: message.id,
-      currentUser: currentUser,
-      isSent: isSent
-    });
-    
-    const deleteFor = isSent 
-      ? window.confirm("Delete for everyone?\n\nOK = Everyone | Cancel = Just you")
-        ? "everyone"
-        : "me"
-      : "me";
-
-    const confirmMessage = deleteFor === "everyone"
-      ? "Delete this message for everyone?"
-      : "Delete this message for you?";
-    
-    if (!window.confirm(confirmMessage)) return;
-    
-    setIsDeleting(true);
+    if (!currentUser) return;
     setShowActions(false);
+    setShowDeleteModal(true);
+  };
 
+  const executeDelete = async (e: React.MouseEvent, deleteType: "me" | "everyone") => {
+    e.stopPropagation();
+    setShowDeleteModal(false);
+    setIsDeleting(true);
     try {
-      console.log("📡 Sending delete request:", {
-        url: `${API_URL}/api/v1/messages/${message.id}`,
-        username: currentUser,
-        deleteFor: deleteFor
+      socket.emit("delete_message", {
+        messageId: message.id,
+        mobile: currentUser,
+        deleteFor: deleteType,
+        roomId: message.room_id
       });
-
-      const response = await fetch(`${API_URL}/api/v1/messages/${message.id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: currentUser, // ✅ Send username string
-          deleteFor: deleteFor,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to delete message");
-      }
-
-      console.log("✅ Delete successful:", result);
-      
-      showNotification(
-        `✓ ${result.message || "Message deleted"}`, 
-        "success"
-      );
-
-      setTimeout(() => {
-        onRefresh();
-      }, 500);
-
-    } catch (err: any) {
-      console.error("❌ Delete failed:", err);
-      showNotification(err.message || "Failed to delete message", "error");
+      showNotification(`✓ Message deleted`, "success");
+      setTimeout(() => onRefresh(), 500);
+    } catch (err) {
+      showNotification("Failed to delete message", "error");
       setIsDeleting(false);
     }
   };
@@ -168,12 +144,7 @@ export default function MessageItem({
   const handleForward = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowActions(false);
-    
-    if (onForward) {
-      onForward(message);
-    } else {
-      alert("Forward feature coming soon!");
-    }
+    if (onForward) onForward(message);
   };
 
   const handleReply = (e: React.MouseEvent) => {
@@ -184,21 +155,18 @@ export default function MessageItem({
 
   const showNotification = (text: string, type: "success" | "error") => {
     const notification = document.createElement('div');
-    notification.className = `message-notification ${type}`;
+    notification.className = `fixed top-20 left-1/2 transform -translate-x-1/2 px-5 py-3 rounded-lg text-sm font-semibold shadow-lg z-[1000000] animate-slideDownNotification ${type === 'success' ? 'bg-indigo-500' : 'bg-red-500'} text-white`;
     notification.textContent = text;
     document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
   };
 
   if (isDeleting) {
     return (
-      <div className={`message-wrapper ${isSent ? "sent" : "received"}`}>
-        <div className="message-bubble deleting">
-          <span className="deleting-icon">⏳</span>
-          <span className="deleting-text">Deleting...</span>
+      <div className={`flex mb-2 px-4 ${isSent ? "justify-end" : "justify-start"}`}>
+        <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300 italic px-3 py-2 rounded-2xl border border-yellow-300 dark:border-yellow-700 flex items-center gap-2 animate-pulse">
+          <span className="animate-spin">⏳</span>
+          <span className="text-xs font-semibold">Deleting...</span>
         </div>
       </div>
     );
@@ -206,10 +174,10 @@ export default function MessageItem({
 
   if (message.is_deleted) {
     return (
-      <div className={`message-wrapper ${isSent ? "sent" : "received"}`}>
-        <div className="message-bubble deleted">
-          <span className="deleted-icon">🚫</span>
-          <span className="deleted-text">
+      <div className={`flex mb-2 px-4 ${isSent ? "justify-end" : "justify-start"}`}>
+        <div className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 italic px-3 py-2 rounded-2xl border border-gray-300 dark:border-gray-600 flex items-center gap-2">
+          <span>🚫</span>
+          <span className="text-xs font-medium">
             {message.deleted_for === "everyone" 
               ? "This message was deleted" 
               : "You deleted this message"}
@@ -223,20 +191,26 @@ export default function MessageItem({
     <>
       <div
         ref={wrapperRef}
-        className={`message-wrapper ${isSent ? "sent" : "received"} ${showActions ? "active" : ""}`}
+        className={`flex mb-2 px-4 relative transition-all duration-500 ${isSent ? "justify-end" : "justify-start"} ${isHighlighted ? "bg-black/5 dark:bg-white/5 py-1 rounded-lg" : ""}`}
       >
-        <div className="message-content" onClick={handleMessageClick}>
+        <div className={`relative max-w-[70%] ${isSent ? "order-2" : "order-1"}`} onClick={handleMessageClick}>
           {message.message_type === "text" && (
-            <div className="message-bubble text">
+            <div
+              className={`relative rounded-2xl px-3 py-2 pb-6 shadow-sm ${
+                isSent
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-br-sm"
+                  : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-bl-sm"
+              }`}
+            >
               {message.reply_to && (
-                <div className="message-quote">
-                  <div className="quote-header">
-                    <div className="quote-line"></div>
-                    <div className="quote-content">
-                      <div className="quote-sender">
-                        {message.reply_to.sender_name}
+                <div className="mb-1.5 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
+                  <div className="flex">
+                    <div className={`w-1 flex-shrink-0 ${isSent ? "bg-white/90" : "bg-indigo-500"}`}></div>
+                    <div className={`flex-1 p-1 ${isSent ? "bg-white/15" : "bg-indigo-50 dark:bg-indigo-900/20"}`}>
+                      <div className={`font-semibold text-[10px] mb-0.5 ${isSent ? "text-white" : "text-indigo-600 dark:text-indigo-400"}`}>
+                        {getDisplayName(message.reply_to.sender_mobile)}
                       </div>
-                      <div className="quote-text">
+                      <div className="text-[10px] line-clamp-2 opacity-85 text-gray-700 dark:text-gray-300">
                         {message.reply_to.message || "📎 Attachment"}
                       </div>
                     </div>
@@ -245,32 +219,42 @@ export default function MessageItem({
               )}
 
               {message.is_forwarded && (
-                <div className="forwarded-label">
-                  <span className="forwarded-icon">↪️</span>
+                <div className="flex items-center gap-1 text-[10px] italic opacity-80 mb-1 font-medium">
+                  <span>↪️</span>
                   <span>Forwarded</span>
                 </div>
               )}
 
-              <p className="message-text">{message.message}</p>
+              <p className="m-0 pr-12 text-sm leading-relaxed break-words whitespace-pre-wrap select-text">
+                {renderMessageContent(message.message)}
+              </p>
               
-              <div className="message-meta">
-                <span className="message-time">{formatTime(message.created_at)}</span>
+              <div className="absolute bottom-1.5 right-2 flex items-center gap-0.5">
+                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+                  {formatTime(message.created_at)}
+                </span>
                 {getMessageStatus()}
               </div>
             </div>
           )}
 
           {message.message_type === "image" && message.file_url && (
-            <div className="message-bubble image">
+            <div
+              className={`relative rounded-2xl p-1 max-w-[280px] shadow-sm ${
+                isSent
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
               {message.reply_to && (
-                <div className="message-quote image-quote">
-                  <div className="quote-header">
-                    <div className="quote-line"></div>
-                    <div className="quote-content">
-                      <div className="quote-sender">
-                        {message.reply_to.sender_name}
+                <div className="m-1 mb-2 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
+                  <div className="flex">
+                    <div className={`w-1 flex-shrink-0 ${isSent ? "bg-white/90" : "bg-indigo-500"}`}></div>
+                    <div className={`flex-1 p-1 ${isSent ? "bg-white/15" : "bg-indigo-50 dark:bg-indigo-900/20"}`}>
+                      <div className={`font-semibold text-[10px] mb-0.5 ${isSent ? "text-white" : "text-indigo-600 dark:text-indigo-400"}`}>
+                        {getDisplayName(message.reply_to.sender_mobile)}
                       </div>
-                      <div className="quote-text">
+                      <div className="text-[10px] line-clamp-2 opacity-85 text-gray-700 dark:text-gray-300">
                         {message.reply_to.message || "📎 Attachment"}
                       </div>
                     </div>
@@ -279,36 +263,97 @@ export default function MessageItem({
               )}
 
               <img
-                src={message.file_url}
+                src={`${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(message.file_url || '')}`}
                 alt="Shared"
-                className="message-image"
+                className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer transition-transform hover:scale-102"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setImageFullscreen(true);
+                  setFullscreenMedia({ url: message.file_url || '', type: 'image' });
                 }}
                 loading="lazy"
               />
+              
               {message.message && (
-                <p className="file-caption">{message.message}</p>
+                <p className={`m-1 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                  {renderMessageContent(message.message)}
+                </p>
               )}
-              <div className="message-meta">
-                <span className="message-time">{formatTime(message.created_at)}</span>
+              <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
+                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+                  {formatTime(message.created_at)}
+                </span>
+                {getMessageStatus()}
+              </div>
+            </div>
+          )}
+
+          {message.message_type === "video" && message.file_url && (
+            <div
+              className={`relative rounded-2xl p-1 max-w-[280px] shadow-sm ${
+                isSent
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              {message.reply_to && (
+                <div className="m-1 mb-2 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
+                  <div className="flex">
+                    <div className={`w-1 flex-shrink-0 ${isSent ? "bg-white/90" : "bg-indigo-500"}`}></div>
+                    <div className={`flex-1 p-1 ${isSent ? "bg-white/15" : "bg-indigo-50 dark:bg-indigo-900/20"}`}>
+                      <div className={`font-semibold text-[10px] mb-0.5 ${isSent ? "text-white" : "text-indigo-600 dark:text-indigo-400"}`}>
+                        {getDisplayName(message.reply_to.sender_mobile)}
+                      </div>
+                      <div className="text-[10px] line-clamp-2 opacity-85 text-gray-700 dark:text-gray-300">
+                        {message.reply_to.message || "📎 Attachment"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <video
+                src={message.file_url}
+                className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer"
+                controls
+                preload="metadata"
+                controlsList="nodownload"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFullscreenMedia({ url: message.file_url || '', type: 'video' });
+                }}
+              />
+              
+              {message.message && (
+                <p className={`m-1 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                  {renderMessageContent(message.message)}
+                </p>
+              )}
+              <div className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-black/40 rounded-full px-1.5 py-0.5 backdrop-blur-sm">
+                <span className={`text-[10px] text-white/90`}>
+                  {formatTime(message.created_at)}
+                </span>
                 {getMessageStatus()}
               </div>
             </div>
           )}
 
           {message.message_type === "file" && message.file_url && (
-            <div className="message-bubble file">
+            <div
+              className={`relative rounded-2xl p-2 min-w-[240px] max-w-[320px] shadow-sm ${
+                isSent
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
               {message.reply_to && (
-                <div className="message-quote file-quote">
-                  <div className="quote-header">
-                    <div className="quote-line"></div>
-                    <div className="quote-content">
-                      <div className="quote-sender">
-                        {message.reply_to.sender_name}
+                <div className="mb-1.5 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
+                  <div className="flex">
+                    <div className={`w-1 flex-shrink-0 ${isSent ? "bg-white/90" : "bg-indigo-500"}`}></div>
+                    <div className={`flex-1 p-1 ${isSent ? "bg-white/15" : "bg-indigo-50 dark:bg-indigo-900/20"}`}>
+                      <div className={`font-semibold text-[10px] mb-0.5 ${isSent ? "text-white" : "text-indigo-600 dark:text-indigo-400"}`}>
+                        {getDisplayName(message.reply_to.sender_mobile)}
                       </div>
-                      <div className="quote-text">
+                      <div className="text-[10px] line-clamp-2 opacity-85 text-gray-700 dark:text-gray-300">
                         {message.reply_to.message || "📎 Attachment"}
                       </div>
                     </div>
@@ -320,100 +365,154 @@ export default function MessageItem({
                 href={message.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="file-link"
+                className="flex items-center gap-2 p-1.5 rounded-lg no-underline text-inherit hover:bg-black/5 dark:hover:bg-white/10 transition"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="file-icon">📎</div>
-                <div className="file-info">
-                  <span className="file-name">
+                <div className={`w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${
+                  isSent ? "text-white" : "text-indigo-600 dark:text-indigo-400"
+                }`}>
+                  📎
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-xs font-semibold truncate ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
                     {message.file_name || "Download File"}
-                  </span>
+                  </div>
                   {message.file_size && (
-                    <span className="file-size">
+                    <div className={`text-[10px] mt-0.5 ${isSent ? "text-white/75" : "text-gray-500 dark:text-gray-400"}`}>
                       {(message.file_size / 1024).toFixed(2)} KB
-                    </span>
+                    </div>
                   )}
                 </div>
               </a>
               {message.message && (
-                <p className="file-caption">{message.message}</p>
+                <p className={`mt-1.5 mb-0 text-sm break-words select-text ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                  {renderMessageContent(message.message)}
+                </p>
               )}
-              <div className="message-meta">
-                <span className="message-time">{formatTime(message.created_at)}</span>
+              <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
+                <span className={`text-[10px] ${isSent ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+                  {formatTime(message.created_at)}
+                </span>
                 {getMessageStatus()}
               </div>
             </div>
           )}
-        </div>
 
-        {showActions && (
-          <div className={`message-actions ${isSent ? "sent" : "received"}`}>
-            <button 
-              onClick={handleReply} 
-              className="action-btn reply-btn"
-              title="Reply"
-            >
-              <span className="btn-icon">↩️</span>
-              <span className="btn-label">Reply</span>
-            </button>
-
-            {message.message && (
-              <button 
-                onClick={handleCopy} 
-                className="action-btn copy-btn"
-                title="Copy"
+          {showActions && (
+            <div className={`absolute flex gap-1 p-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-[100000] animate-slideInActions ${
+              isSent ? "bottom-full right-0" : "bottom-full left-0"
+            }`}>
+              <button
+                onClick={handleReply}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-[10px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
               >
-                <span className="btn-icon">📋</span>
-                <span className="btn-label">Copy</span>
+                <span>↩️</span>
+                <span>Reply</span>
               </button>
-            )}
 
-            <button 
-              onClick={handleForward} 
-              className="action-btn forward-btn"
-              title="Forward"
-            >
-              <span className="btn-icon">➡️</span>
-              <span className="btn-label">Forward</span>
-            </button>
+              {message.message && (
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-[10px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 dark:hover:text-green-400 transition"
+                >
+                  <span>📋</span>
+                  <span>Copy</span>
+                </button>
+              )}
 
-            <button 
-              onClick={handleDelete} 
-              className="action-btn delete-btn"
-              title="Delete"
-            >
-              <span className="btn-icon">🗑️</span>
-              <span className="btn-label">Delete</span>
-            </button>
-          </div>
-        )}
+              <button
+                onClick={handleForward}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-[10px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 transition"
+              >
+                <span>➡️</span>
+                <span>Forward</span>
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-[10px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition"
+              >
+                <span>🗑️</span>
+                <span>Delete</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {imageFullscreen && (
+      {fullscreenMedia && (
         <>
           <div
-            className="image-fullscreen-overlay"
-            onClick={() => setImageFullscreen(false)}
+            className="fixed inset-0 bg-black/90 z-[999999] animate-fadeIn"
+            onClick={() => setFullscreenMedia(null)}
           />
-          <div className="image-fullscreen">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[1000000] max-w-[90vw] max-h-[90vh] flex flex-col items-center animate-zoomIn">
             <button
-              className="close-fullscreen"
-              onClick={() => setImageFullscreen(false)}
+              className="absolute -top-12 right-0 w-10 h-10 bg-white/90 rounded-full text-3xl cursor-pointer flex items-center justify-center hover:bg-white transition hover:rotate-90"
+              onClick={() => setFullscreenMedia(null)}
             >
               ×
             </button>
-            <img src={message.file_url} alt="Full size" />
+            {fullscreenMedia.type === 'image' ? (
+              <img
+                src={`${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(fullscreenMedia.url)}`}
+                alt="Full size"
+                className="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
+              />
+            ) : (
+              <video
+                src={fullscreenMedia.url}
+                controls
+                autoPlay
+                className="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
+              />
+            )}
             <a
-              href={message.file_url}
+              href={fullscreenMedia.url}
               download
-              className="download-fullscreen"
+              className="mt-6 bg-white/90 px-6 py-2.5 rounded-xl no-underline text-gray-900 font-bold text-sm hover:bg-white transition hover:-translate-y-1 shadow-lg"
               target="_blank"
               rel="noopener noreferrer"
             >
-              ⬇️ Download
+              ⬇️ Download Media
             </a>
           </div>
         </>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn" onClick={() => setShowDeleteModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden flex flex-col animate-scaleUp border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white text-center m-0">Delete message?</h3>
+            </div>
+            <div className="flex flex-col p-2 space-y-1">
+              {isSent && (
+                <button
+                  onClick={(e) => executeDelete(e, "everyone")}
+                  className="w-full py-3 px-4 text-red-500 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-sm disabled:opacity-50"
+                  disabled={isDeleting}
+                >
+                  Delete for everyone
+                </button>
+              )}
+              <button
+                onClick={(e) => executeDelete(e, "me")}
+                className="w-full py-3 px-4 text-gray-800 dark:text-gray-200 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition text-sm disabled:opacity-50"
+                disabled={isDeleting}
+              >
+                Delete for me
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowDeleteModal(false); }}
+                className="w-full py-3 px-4 text-indigo-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition mt-1 text-sm disabled:opacity-50"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

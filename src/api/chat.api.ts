@@ -1,7 +1,7 @@
 // src/api/chat.api.ts
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL as string;
 
 // Create axios instance with proper CORS configuration
 const apiClient = axios.create({

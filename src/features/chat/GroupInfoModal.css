@@ -273,7 +273,7 @@
 
 .remove-member-btn {
   padding: 6px 12px;
-  background: #ff4444;
+  background: #0084ff;
   color: white;
   border: none;
   border-radius: 6px;
@@ -285,7 +285,7 @@
 }
 
 .remove-member-btn:hover {
-  background: #cc0000;
+  background: #0084ff;
 }
 
 /* Add Members Panel */
@@ -422,7 +422,7 @@
 .leave-group-btn {
   width: 100%;
   padding: 14px;
-  background: #ff4444;
+  background:  #0084ff;
   color: white;
   border: none;
   border-radius: 8px;
@@ -433,7 +433,7 @@
 }
 
 .leave-group-btn:hover {
-  background: #cc0000;
+  background: #0084ff;
   transform: translateY(-1px);
 }
 

@@ -109,20 +109,23 @@
   background: #374151;
 }
 
-/* ================= CHAT HEADER (Fixed at top) ================= */
-.chat-header {
-  position: fixed;
-  top: 0;
-  left: 27.4%;
-  right: 0;
-  height: 64px;
-  z-index: 100;
+/* NOTE: .chat-header styles removed to avoid duplication – now handled by ChatHeader.css */
+/* Add to ChatWindow.css */
+.highlight-message {
+  animation: highlight-pulse 2s ease-out;
 }
 
-@media (max-width: 768px) {
-  .chat-header {
-    left: 0;
-    right: 0;
-    width: 100%;
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(99, 102, 241, 0);
+  }
+  20% {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+  80% {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+  100% {
+    background-color: rgba(99, 102, 241, 0);
   }
 }

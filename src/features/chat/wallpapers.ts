@@ -232,6 +232,22 @@ export const WALLPAPERS: WallpaperOption[] = [
     category: 'pattern',
     preview: 'linear-gradient(135deg, #232e3b, #1a232e)',
     css: 'linear-gradient(135deg, #232e3b, #1a232e), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px)'
+  },
+  // ========== ADDED: Classic WhatsApp Light Doodle Theme (Most Popular) ==========
+  {
+    id: 'whatsapp-light-doodle-popular',
+    name: 'Classic WhatsApp Light Doodle Theme (Most Popular)',
+    category: 'pattern',
+    preview: 'radial-gradient(circle, #b3a99a 1px, transparent 1px)',
+    css: 'radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px) #e5ddd5'
+  },
+  // ========== ADDED: Dark Mode WhatsApp Theme (Modern & Premium) ==========
+  {
+    id: 'whatsapp-dark-doodle-premium',
+    name: 'Dark Mode WhatsApp Theme (Modern & Premium)',
+    category: 'pattern',
+    preview: 'radial-gradient(circle, #555 1px, transparent 1px)',
+    css: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px) #0b141a'
   }
 ];
 
@@ -242,3 +258,5 @@ export const getWallpaperById = (id: string): WallpaperOption | undefined => {
 export const getWallpapersByCategory = (category: WallpaperOption['category']) => {
   return WALLPAPERS.filter(w => w.category === category);
 };
+
+
