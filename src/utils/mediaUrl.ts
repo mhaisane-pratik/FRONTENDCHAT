@@ -12,8 +12,21 @@ const getApiOrigin = () => {
 export const resolveMediaUrl = (url?: string | null): string => {
   if (!url) return "";
 
-  // Already absolute (http, https), data URL, or blob URL.
-  if (/^(https?:)?\/\//i.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+  // Data/blob URLs should pass through unchanged.
+  if (url.startsWith("data:") || url.startsWith("blob:")) {
+    return url;
+  }
+
+  // If backend stored localhost URLs, rewrite them to current API origin for deployed frontend.
+  if (/^(https?:)?\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+        return `${getApiOrigin()}${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      // fall through and return original url
+    }
     return url;
   }
 
