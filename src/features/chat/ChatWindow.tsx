@@ -451,8 +451,8 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
-      <div className="z-[30] flex-shrink-0">
+    <div className="flex flex-col w-full h-[100svh] md:h-full min-h-0 bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
+      <div className="sticky top-0 z-[120] flex-shrink-0 pt-[env(safe-area-inset-top)]">
         <ChatHeader
           receiver={receiver}
           roomId={selectedRoom || ""}
@@ -466,7 +466,7 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
       </div>
 
       {isSearching && (
-        <div className="sticky top-[60px] md:top-[72px] z-[110] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 md:p-3 flex items-center gap-2 md:gap-3 shadow-sm animate-slideDown">
+        <div className="sticky top-[calc(60px+env(safe-area-inset-top))] md:top-[72px] z-[110] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 md:p-3 flex items-center gap-2 md:gap-3 shadow-sm animate-slideDown">
           <button 
             onClick={handleCloseSearch}
             className="p-1.5 md:p-2.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
@@ -539,7 +539,7 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
         </div>
       )}
 
-      <div className="w-full flex-shrink-0 z-[30]">
+      <div className="w-full flex-shrink-0 z-[130]">
         <InputArea
           roomId={selectedRoom || ""}
           sender={currentUser.mobile}
