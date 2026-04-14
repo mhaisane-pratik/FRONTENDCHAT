@@ -26,9 +26,10 @@ export default function UserProfileModal({ isOpen, onClose, profile }: UserProfi
   if (!isOpen) return null;
 
   const displayName = profile.display_name || profile.mobile;
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0D9488&color=fff&size=160&bold=true`;
   const avatar =
     resolveMediaUrl(profile.profile_picture) ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0D9488&color=fff&size=160&bold=true`;
+    avatarFallback;
 
   return (
     <>
@@ -53,6 +54,10 @@ export default function UserProfileModal({ isOpen, onClose, profile }: UserProfi
                 src={avatar}
                 alt={displayName}
                 className="w-28 h-28 rounded-full object-cover border-4 border-emerald-500/30"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = avatarFallback;
+                }}
               />
               <h4 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{displayName}</h4>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

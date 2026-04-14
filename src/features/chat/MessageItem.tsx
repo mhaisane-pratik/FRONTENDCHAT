@@ -164,6 +164,52 @@ export default function MessageItem({
 
   const mediaUrl = resolveMediaUrl(message.file_url || "");
   const proxiedMediaUrl = `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`;
+  const imageSrc = mediaUrl ? proxiedMediaUrl : "";
+  const apiOrigin = (() => {
+    try {
+      return new URL(API_URL).origin;
+    } catch {
+      return API_URL;
+    }
+  })();
+  const rawFileUrl = (message.file_url || "").trim();
+  const normalizedRawPath = rawFileUrl.replace(/\\/g, "/");
+  const normalizedUploadPath = normalizedRawPath
+    .replace(/^\/?src\/uploads\//i, "/uploads/")
+    .replace(/^uploads\//i, "/uploads/");
+  const directNormalizedUploadUrl = normalizedUploadPath
+    ? resolveMediaUrl(normalizedUploadPath)
+    : "";
+  const localhostRewrittenUrl = normalizedRawPath
+    ? normalizedRawPath.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, apiOrigin)
+    : "";
+  const imageCandidates = Array.from(
+    new Set(
+      [
+        imageSrc,
+        mediaUrl,
+        directNormalizedUploadUrl,
+        localhostRewrittenUrl,
+        rawFileUrl,
+      ].filter(Boolean)
+    )
+  );
+  const fileRef = `${message.file_url || ""} ${message.file_name || ""}`.toLowerCase();
+  const looksLikeImage = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)(\?|$)/.test(fileRef);
+  const looksLikeVideo = /\.(mp4|webm|mov|m4v|avi|mkv|3gp)(\?|$)/.test(fileRef);
+  const isImageMessage = Boolean(message.file_url) && (
+    message.message_type === "image" || (message.message_type === "file" && looksLikeImage)
+  );
+  const isVideoMessage = Boolean(message.file_url) && (
+    message.message_type === "video" || (message.message_type === "file" && looksLikeVideo)
+  );
+  const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage;
+  const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
+  const imageRenderSrc = imageCandidates[imageCandidateIndex] || "";
+
+  useEffect(() => {
+    setImageCandidateIndex(0);
+  }, [message.id, imageSrc, mediaUrl, rawFileUrl]);
 
   if (isDeleting) {
     return (
@@ -254,9 +300,9 @@ export default function MessageItem({
             </div>
           )}
 
-          {message.message_type === "image" && message.file_url && (
+          {isImageMessage && (
             <div
-              className={`relative rounded-2xl p-1 max-w-[280px] shadow-sm ${
+              className={`relative rounded-2xl p-1 max-w-[320px] shadow-sm ${
                 isSent
                   ? "bg-gradient-to-r from-indigo-500 to-purple-500"
                   : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
@@ -279,21 +325,30 @@ export default function MessageItem({
               )}
 
               <img
-                src={mediaUrl}
+                src={imageRenderSrc}
                 alt="Shared"
-                className="w-full max-h-[300px] object-cover rounded-xl cursor-pointer transition-transform hover:scale-102"
+                className="block w-[min(320px,70vw)] max-w-full max-h-[380px] h-auto object-contain bg-black/5 dark:bg-black/20 rounded-xl cursor-pointer transition-transform hover:scale-[1.01]"
                 onError={(e) => {
-                  const target = e.currentTarget;
-                  if (target.src !== proxiedMediaUrl) {
-                    target.src = proxiedMediaUrl;
-                  }
+                  e.stopPropagation();
+                  setImageCandidateIndex((prev) => {
+                    const next = prev + 1;
+                    return next < imageCandidates.length ? next : -1;
+                  });
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setFullscreenMedia({ url: mediaUrl, type: 'image' });
+                  if (imageRenderSrc) {
+                    setFullscreenMedia({ url: imageRenderSrc, type: 'image' });
+                  }
                 }}
                 loading="lazy"
               />
+
+              {!imageRenderSrc && (
+                <div className="w-[min(320px,70vw)] max-w-full h-[180px] rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-500 dark:text-gray-300">
+                  Image unavailable
+                </div>
+              )}
               
                 {message.message && (
                   <p className={`m-1 text-sm break-words select-text relative ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
@@ -320,7 +375,7 @@ export default function MessageItem({
             </div>
           )}
 
-          {message.message_type === "video" && message.file_url && (
+          {isVideoMessage && (
             <div
               className={`relative rounded-2xl p-1 max-w-[280px] shadow-sm ${
                 isSent
@@ -381,7 +436,7 @@ export default function MessageItem({
             </div>
           )}
 
-          {message.message_type === "file" && message.file_url && (
+          {isGenericFileMessage && (
             <div
               className={`relative rounded-2xl p-2 min-w-[240px] max-w-[320px] shadow-sm ${
                 isSent

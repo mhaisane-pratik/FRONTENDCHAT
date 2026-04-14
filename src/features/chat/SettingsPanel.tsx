@@ -26,6 +26,7 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.mobile || 'user')}&background=0D9488&color=fff&size=128&bold=true`;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -37,8 +38,8 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   };
 
   const currentDpUrl = previewUrl === "remove" 
-    ? `https://ui-avatars.com/api/?name=${currentUser?.mobile || 'user'}&background=0D9488&color=fff&size=128&bold=true`
-    : previewUrl || resolveMediaUrl(currentUser?.profile_picture) || `https://ui-avatars.com/api/?name=${currentUser?.mobile || 'user'}&background=0D9488&color=fff&size=128&bold=true`;
+    ? avatarFallback
+    : previewUrl || resolveMediaUrl(currentUser?.profile_picture) || avatarFallback;
 
   const handleSaveProfile = async () => {
     if (!currentUser) return;
@@ -135,6 +136,10 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
                     src={currentDpUrl}
                     alt="Profile"
                     className="w-32 h-32 rounded-full border-4 border-indigo-500 object-cover shadow-xl transition-opacity group-hover:opacity-90"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = avatarFallback;
+                    }}
                   />
                   <div className="absolute bottom-1 right-1 w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center text-white shadow-xl border-2 border-white dark:border-gray-900 transition-transform group-hover:scale-110">
                     <Camera size={18} />

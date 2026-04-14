@@ -6,6 +6,7 @@ import ChatWindow from "./ChatWindow";
 import ChatSelect from "./ChatSelect";
 import SettingsPanel from "./SettingsPanel";
 import { socket } from "../../api/socket";
+import splashIllustration from "../../assets/images/zat-room.png";
 
 export default function ChatLayout() {
   const navigate = useNavigate();
@@ -122,7 +123,7 @@ export default function ChatLayout() {
                 <div className="mb-8 relative">
                   <div className="absolute -inset-4 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-2xl animate-pulse"></div>
                   <img 
-                    src="file:///C:/Users/prati/.gemini/antigravity/brain/b43f089c-ecbf-44e8-abb7-c551b2a1960c/chat_splash_illustration_1776079793352.png" 
+                    src={splashIllustration}
                     alt="ZatChat Welcome" 
                     className="w-72 h-72 mx-auto object-contain relative drop-shadow-2xl"
                   />

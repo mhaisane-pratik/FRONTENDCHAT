@@ -71,6 +71,7 @@ export default function ChatHeader({
     : getDisplayName(receiver, rawFallbackName);
 
   const isOnline = !isGroup && onlineUsers.has(receiver);
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || receiver || '')}&background=0D9488&color=fff&size=48&font-size=0.33&bold=true`;
 
   useEffect(() => {
     if (!isGroup && receiver && receiver !== currentUser?.mobile && !cachedProfile) {
@@ -183,7 +184,7 @@ export default function ChatHeader({
                 <img
                   src={
                     resolveMediaUrl(cachedProfile?.profile_picture || receiverInfo?.profile_picture) ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || '')}&background=0D9488&color=fff&size=48&font-size=0.33&bold=true`
+                    avatarFallback
                   }
                   alt={receiver}
                   className={`
@@ -191,6 +192,10 @@ export default function ChatHeader({
                     ring-2 ring-white dark:ring-gray-800
                     shadow-md
                   `}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = avatarFallback;
+                  }}
                 />
                 {!isGroup && (
                   <span

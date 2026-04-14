@@ -178,7 +178,16 @@ export default function InputArea({
   };
 
   const sendGif = (gif: any) => {
-    const gifUrl = gif.media[0].gif.url;
+    const gifUrl =
+      gif?.media_formats?.gif?.url ||
+      gif?.media_formats?.mediumgif?.url ||
+      gif?.media?.[0]?.gif?.url ||
+      gif?.media?.[0]?.mediumgif?.url ||
+      gif?.url ||
+      "";
+
+    if (!gifUrl) return;
+
     socket.emit("send_file", {
       roomId,
       sender,
@@ -242,7 +251,7 @@ export default function InputArea({
         message_type: "text",
         is_delivered: false,
         is_seen: false,
-        reply_to_id: replyingTo?.id || null,
+        reply_to_id: replyingTo?.id || undefined,
         reply_to: replyingTo || null,
         created_at: new Date().toISOString(),
         is_temp: true,
@@ -344,7 +353,7 @@ export default function InputArea({
   };
 
   return (
-    <div className="w-full flex-shrink-0 z-[20] bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all duration-300 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] px-3 sm:px-6 md:px-8 py-2 sm:py-3">
+    <div className="relative w-full flex-shrink-0 z-[20] bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-all duration-300 shadow-[0_-4px_15px_rgba(0,0,0,0.05)] px-3 sm:px-6 md:px-8 py-2 sm:py-3">
       <div className="max-w-5xl mx-auto flex flex-col gap-2">
         
         {showSuggestions && suggestions.length > 0 && (
@@ -425,6 +434,76 @@ export default function InputArea({
           </div>
         )}
 
+        {showGiphy && (
+          <div className="mb-2 rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden animate-slideUp">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/80">
+              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold">
+                <Sparkles size={16} className="text-indigo-500" />
+                GIFs
+              </div>
+              <input
+                type="text"
+                value={giphySearch}
+                onChange={(e) => setGiphySearch(e.target.value)}
+                placeholder="Search GIFs"
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-indigo-500"
+              />
+              <button
+                type="button"
+                className="p-2 rounded-xl text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => setShowGiphy(false)}
+                aria-label="Close GIF picker"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="max-h-[280px] overflow-y-auto p-3 custom-scrollbar">
+              {giphyLoading ? (
+                <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400 gap-2">
+                  <Loader2 size={18} className="animate-spin" />
+                  Loading GIFs...
+                </div>
+              ) : giphyResults.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {giphyResults.map((gif, index) => {
+                    const gifUrl =
+                      gif?.media_formats?.tinygif?.url ||
+                      gif?.media_formats?.gif?.url ||
+                      gif?.media?.[0]?.tinygif?.url ||
+                      gif?.media?.[0]?.gif?.url ||
+                      gif?.url ||
+                      "";
+
+                    if (!gifUrl) return null;
+
+                    return (
+                      <button
+                        key={`${gifUrl}-${index}`}
+                        type="button"
+                        className="group overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:shadow-lg transition-all duration-200"
+                        onClick={() => sendGif(gif)}
+                        title="Send GIF"
+                      >
+                        <img
+                          src={gifUrl}
+                          alt={gif?.content_description || "GIF"}
+                          className="w-full aspect-square object-cover group-hover:scale-[1.03] transition-transform duration-200"
+                          loading="lazy"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-12 text-gray-500 dark:text-gray-400 text-sm">
+                  No GIFs found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end gap-2 sm:gap-3">
           <div className="flex-1 flex items-end gap-1 sm:gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-[24px] sm:rounded-[32px] px-2 py-1.5 sm:py-2 border border-transparent focus-within:border-indigo-500/30 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-300 shadow-inner">
             <div className="flex items-center">
@@ -467,7 +546,10 @@ export default function InputArea({
                onClick={() => setShowGiphy(!showGiphy)}
                title="GIFs"
             >
-               <Sparkles size={22} className={`${showGiphy ? 'text-indigo-500' : ''} sm:w-6 sm:h-6`} />
+              <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold tracking-[0.14em] uppercase">
+                <Sparkles size={18} className={`${showGiphy ? 'text-indigo-500' : ''} sm:w-5 sm:h-5`} />
+                GIF
+              </span>
             </button>
           </div>
 

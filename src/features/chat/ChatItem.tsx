@@ -34,6 +34,7 @@ export default function ChatItem({
 }: ChatItemProps) {
   const { currentUser, onlineUsers } = useChat();
   const [showMenu, setShowMenu] = useState(false);
+  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || '')}&background=random`;
 
   const isOnline = !isGroup && onlineUsers.has(displayName);
 
@@ -116,12 +117,14 @@ export default function ChatItem({
             <img
               src={
                 resolveMediaUrl(avatarUrl) ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  displayName
-                )}&background=random`
+                avatarFallback
               }
               alt={displayName}
               className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = avatarFallback;
+              }}
             />
             {isOnline && (
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full"></span>

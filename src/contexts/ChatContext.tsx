@@ -92,6 +92,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [contacts, setContacts] = useState<Map<string, string>>(new Map());
 
   const hasInitialized = useRef(false);
+  const contactsApiUnavailable = useRef(false);
 
   const normalizeMobileKey = (value?: string) => (value || "").replace(/\D/g, "");
   const getLocalContactsKey = (mobile?: string) => `local_contacts_${normalizeMobileKey(mobile)}`;
@@ -101,6 +102,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const localRaw = localStorage.getItem(getLocalContactsKey(currentUser.mobile));
       const localData = localRaw ? (JSON.parse(localRaw) as Array<{ contact_mobile: string; contact_name: string }>) : [];
+
+      if (contactsApiUnavailable.current) {
+        const localMap = new Map<string, string>();
+        localData.forEach((c) => {
+          const key = normalizeMobileKey(c.contact_mobile);
+          if (key) localMap.set(key, c.contact_name);
+        });
+        setContacts(localMap);
+        return;
+      }
 
       const res = await fetch(`${API_URL}/api/v1/contacts/${encodeURIComponent(currentUser.mobile)}`);
       if (res.ok) {
@@ -112,6 +123,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setContacts(contactMap);
       } else if (res.status === 404) {
+        contactsApiUnavailable.current = true;
         const contactMap = new Map<string, string>();
         localData.forEach((c) => {
           const key = normalizeMobileKey(c.contact_mobile);
