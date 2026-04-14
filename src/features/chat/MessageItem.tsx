@@ -163,8 +163,6 @@ export default function MessageItem({
   };
 
   const mediaUrl = resolveMediaUrl(message.file_url || "");
-  const proxiedMediaUrl = `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`;
-  const imageSrc = mediaUrl ? proxiedMediaUrl : "";
   const apiOrigin = (() => {
     try {
       return new URL(API_URL).origin;
@@ -183,16 +181,33 @@ export default function MessageItem({
   const localhostRewrittenUrl = normalizedRawPath
     ? normalizedRawPath.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, apiOrigin)
     : "";
-  const imageCandidates = Array.from(
+
+  const toAbsoluteBackendUrl = (candidate: string) => {
+    if (!candidate) return "";
+    if (/^https?:\/\//i.test(candidate)) return candidate;
+    const clean = candidate.startsWith("/") ? candidate : `/${candidate}`;
+    return `${apiOrigin}${clean}`;
+  };
+
+  const directImageCandidates = Array.from(
     new Set(
       [
-        imageSrc,
         mediaUrl,
         directNormalizedUploadUrl,
         localhostRewrittenUrl,
-        rawFileUrl,
+        toAbsoluteBackendUrl(normalizedUploadPath),
+        toAbsoluteBackendUrl(normalizedRawPath),
+        /^https?:\/\//i.test(rawFileUrl) ? rawFileUrl : "",
       ].filter(Boolean)
     )
+  );
+
+  const proxyImageCandidates = directImageCandidates.map(
+    (candidate) => `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(candidate)}`
+  );
+
+  const imageCandidates = Array.from(
+    new Set([...directImageCandidates, ...proxyImageCandidates])
   );
   const fileRef = `${message.file_url || ""} ${message.file_name || ""}`.toLowerCase();
   const looksLikeImage = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)(\?|$)/.test(fileRef);
@@ -209,7 +224,7 @@ export default function MessageItem({
 
   useEffect(() => {
     setImageCandidateIndex(0);
-  }, [message.id, imageSrc, mediaUrl, rawFileUrl]);
+  }, [rawFileUrl, mediaUrl]);
 
   if (isDeleting) {
     return (
@@ -324,29 +339,41 @@ export default function MessageItem({
                 </div>
               )}
 
-              <img
-                src={imageRenderSrc}
-                alt="Shared"
-                className="block w-[min(320px,70vw)] max-w-full max-h-[380px] h-auto object-contain bg-black/5 dark:bg-black/20 rounded-xl cursor-pointer transition-transform hover:scale-[1.01]"
-                onError={(e) => {
-                  e.stopPropagation();
-                  setImageCandidateIndex((prev) => {
-                    const next = prev + 1;
-                    return next < imageCandidates.length ? next : -1;
-                  });
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (imageRenderSrc) {
-                    setFullscreenMedia({ url: imageRenderSrc, type: 'image' });
-                  }
-                }}
-                loading="lazy"
-              />
+              {imageRenderSrc && (
+                <img
+                  src={imageRenderSrc}
+                  alt="Shared"
+                  className="block w-[min(320px,70vw)] max-w-full max-h-[380px] h-auto object-contain bg-black/5 dark:bg-black/20 rounded-xl cursor-pointer transition-transform hover:scale-[1.01]"
+                  onError={(e) => {
+                    e.stopPropagation();
+                    setImageCandidateIndex((prev) => {
+                      const next = prev + 1;
+                      return next < imageCandidates.length ? next : -1;
+                    });
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (imageRenderSrc) {
+                      setFullscreenMedia({ url: imageRenderSrc, type: 'image' });
+                    }
+                  }}
+                  loading="lazy"
+                />
+              )}
 
               {!imageRenderSrc && (
-                <div className="w-[min(320px,70vw)] max-w-full h-[180px] rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-500 dark:text-gray-300">
-                  Image unavailable
+                <div className="w-[min(320px,70vw)] max-w-full h-[180px] rounded-xl bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-300">
+                  <span>Unable to load image</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageCandidateIndex(0);
+                    }}
+                    className="px-2 py-1 rounded-md bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
               

@@ -130,6 +130,7 @@ export default function InputArea({
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setText((prev) => prev + emojiData.emoji);
+    setShowEmoji(false);
     textareaRef.current?.focus();
   };
 
@@ -504,10 +505,41 @@ export default function InputArea({
           </div>
         )}
 
+        {showEmoji && (
+          <div className="mb-2 rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl overflow-hidden animate-slideUp">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/80">
+              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200 font-semibold">
+                <Smile size={16} className="text-indigo-500" />
+                Reactions
+              </div>
+              <button
+                type="button"
+                className="p-2 rounded-xl text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                onClick={() => setShowEmoji(false)}
+                aria-label="Close emoji picker"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[320px] overflow-y-auto p-2">
+              <EmojiPicker
+                onEmojiClick={onEmojiClick}
+                width="100%"
+                height={300}
+                lazyLoadEmojis
+                searchDisabled={false}
+                skinTonesDisabled
+                previewConfig={{ showPreview: false }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end gap-2 sm:gap-3">
           <div className="flex-1 flex items-end gap-1 sm:gap-2 bg-gray-100 dark:bg-gray-700/50 rounded-[24px] sm:rounded-[32px] px-2 py-1.5 sm:py-2 border border-transparent focus-within:border-indigo-500/30 focus-within:bg-white dark:focus-within:bg-gray-700 transition-all duration-300 shadow-inner">
             <div className="flex items-center">
               <button
+                type="button"
                 className={`p-2 sm:p-2.5 rounded-full transition-colors duration-200 flex-shrink-0 ${showEmoji ? 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 onClick={() => { setShowEmoji(!showEmoji); setShowGiphy(false); }}
                 title="Emoji"
@@ -542,8 +574,9 @@ export default function InputArea({
             </div>
             
             <button
+              type="button"
                className="p-2 sm:p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors duration-200 flex-shrink-0"
-               onClick={() => setShowGiphy(!showGiphy)}
+              onClick={() => { setShowGiphy(!showGiphy); setShowEmoji(false); }}
                title="GIFs"
             >
               <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-extrabold tracking-[0.14em] uppercase">
