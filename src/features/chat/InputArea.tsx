@@ -144,9 +144,9 @@ export default function InputArea({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
-      setUploadError("File size must be less than 50MB");
+      setUploadError("File size must be less than 100MB");
       return;
     }
     const allowedTypes = [
