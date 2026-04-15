@@ -351,13 +351,16 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
 
   const handleClearChatSubmit = async () => {
     if (!currentUser) return;
-    if (!window.confirm("Are you sure you want to completely clear this chat? This action cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this chat? This action cannot be undone.")) return;
     try {
-      const res = await fetch(`${API_URL}/api/v1/chats/clear/${selectedRoom}?mobile=${encodeURIComponent(currentUser.mobile)}`, {
+      // Permanent clear: do not send mobile query param, so backend performs full room wipe.
+      const res = await fetch(`${API_URL}/api/v1/chats/clear/${selectedRoom}`, {
         method: 'DELETE',
         headers: { "x-api-key": API_KEY }
       });
-      if (res.ok) setMessages([]);
+      if (res.ok) {
+        setMessages([]);
+      }
       else alert("Failed to clear chat");
     } catch (err) { console.error(err); }
   };
@@ -451,8 +454,8 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
   }
 
   return (
-    <div className="flex flex-col w-full h-[100svh] md:h-full min-h-0 bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
-      <div className="sticky top-0 z-[120] flex-shrink-0 pt-[env(safe-area-inset-top)]">
+    <div className="flex flex-col w-full h-[100dvh] md:h-full min-h-0 bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
+      <div className="fixed md:sticky top-0 left-0 right-0 md:left-auto md:right-auto z-[120] flex-shrink-0 pt-[env(safe-area-inset-top)]">
         <ChatHeader
           receiver={receiver}
           roomId={selectedRoom || ""}
@@ -508,7 +511,7 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
         </div>
       )}
 
-      <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col relative overflow-hidden pt-[72px] md:pt-0 pb-[96px] md:pb-0">
         <MessageList
           messages={messages}
           currentUser={currentUser.mobile}
@@ -525,7 +528,7 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
       </div>
 
       {selectedRoom && typingUsers[selectedRoom] && typingUsers[selectedRoom].size > 0 && (
-        <div className="px-4 py-1.5 flex gap-2.5 pointer-events-none z-[80]">
+        <div className="fixed md:relative left-0 right-0 bottom-[calc(88px+env(safe-area-inset-bottom))] md:bottom-auto px-4 py-1.5 flex gap-2.5 pointer-events-none z-[125]">
           <div className="bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-md">
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
@@ -539,7 +542,7 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
         </div>
       )}
 
-      <div className="w-full flex-shrink-0 z-[130]">
+      <div className="fixed md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto w-full flex-shrink-0 z-[130]">
         <InputArea
           roomId={selectedRoom || ""}
           sender={currentUser.mobile}

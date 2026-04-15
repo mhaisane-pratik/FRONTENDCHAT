@@ -192,11 +192,14 @@ export default function MessageItem({
   const directImageCandidates = Array.from(
     new Set(
       [
+        // ✅ Prioritize direct backend URL first (most likely to work)
+        toAbsoluteBackendUrl(normalizedUploadPath),
+        toAbsoluteBackendUrl(normalizedRawPath),
+        // Then try other resolved URLs
         mediaUrl,
         directNormalizedUploadUrl,
         localhostRewrittenUrl,
-        toAbsoluteBackendUrl(normalizedUploadPath),
-        toAbsoluteBackendUrl(normalizedRawPath),
+        // Finally, try raw external URLs
         /^https?:\/\//i.test(rawFileUrl) ? rawFileUrl : "",
       ].filter(Boolean)
     )
@@ -206,8 +209,14 @@ export default function MessageItem({
     (candidate) => `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(candidate)}`
   );
 
+  // ✅ Optimized candidates order: try direct first, then proxy
   const imageCandidates = Array.from(
-    new Set([...directImageCandidates, ...proxyImageCandidates])
+    new Set([
+      ...directImageCandidates.slice(0, 2), // Try top 2 direct URLs first
+      ...proxyImageCandidates.slice(0, 2), // Then try top 2 proxy versions
+      ...directImageCandidates.slice(2),   // Then remaining direct URLs
+      ...proxyImageCandidates.slice(2),    // Finally, remaining proxy URLs
+    ])
   );
   const fileRef = `${message.file_url || ""} ${message.file_name || ""}`.toLowerCase();
   const looksLikeImage = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)(\?|$)/.test(fileRef);
@@ -220,11 +229,46 @@ export default function MessageItem({
   );
   const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage;
   const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
+  const [imageLoadAttempts, setImageLoadAttempts] = useState(0);
   const imageRenderSrc = imageCandidates[imageCandidateIndex] || "";
 
   useEffect(() => {
     setImageCandidateIndex(0);
+    setImageLoadAttempts(0);
   }, [rawFileUrl, mediaUrl]);
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    setImageLoadAttempts((prev) => prev + 1);
+    
+    // ✅ Improved fallback logic: prioritize proxy URLs after direct attempt fails
+    setImageCandidateIndex((prev) => {
+      const currentAttempt = imageLoadAttempts + 1;
+      
+      // Strategy: Try direct URLs first, then fallback to proxy versions
+      if (currentAttempt === 1 && directImageCandidates.length > 0) {
+        // First attempt failed, try the next direct candidate if available
+        const nextDirect = prev + 1;
+        if (nextDirect < directImageCandidates.length) {
+          console.warn(`[Image][Attempt ${currentAttempt}] Direct URL failed, trying next direct URL:`, imageRenderSrc);
+          return nextDirect;
+        }
+      }
+      
+      // If all direct URLs failed, move to proxy URLs
+      if (currentAttempt > directImageCandidates.length) {
+        const proxyIndex = currentAttempt - directImageCandidates.length - 1;
+        if (proxyIndex < proxyImageCandidates.length) {
+          console.warn(`[Image][Attempt ${currentAttempt}] Trying proxy URL:`, proxyImageCandidates[proxyIndex]);
+          return directImageCandidates.length + proxyIndex;
+        }
+      }
+      
+      // All candidates exhausted
+      console.error(`[Image][Attempt ${currentAttempt}] All URL candidates failed for:`, message.file_name);
+      return -1;
+    });
+  };
 
   if (isDeleting) {
     return (
@@ -344,13 +388,7 @@ export default function MessageItem({
                   src={imageRenderSrc}
                   alt="Shared"
                   className="block w-[min(320px,70vw)] max-w-full max-h-[380px] h-auto object-contain bg-black/5 dark:bg-black/20 rounded-xl cursor-pointer transition-transform hover:scale-[1.01]"
-                  onError={(e) => {
-                    e.stopPropagation();
-                    setImageCandidateIndex((prev) => {
-                      const next = prev + 1;
-                      return next < imageCandidates.length ? next : -1;
-                    });
-                  }}
+                  onError={handleImageError}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (imageRenderSrc) {
@@ -358,6 +396,7 @@ export default function MessageItem({
                     }
                   }}
                   loading="lazy"
+                  crossOrigin="anonymous"
                 />
               )}
 
@@ -368,9 +407,11 @@ export default function MessageItem({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log(`[Image] Manual retry clicked for: ${message.file_name}`);
                       setImageCandidateIndex(0);
+                      setImageLoadAttempts(0);
                     }}
-                    className="px-2 py-1 rounded-md bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600"
+                    className="px-3 py-1.5 rounded-md bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-800 transition"
                   >
                     Retry
                   </button>
@@ -432,6 +473,7 @@ export default function MessageItem({
                 controls
                 preload="metadata"
                 controlsList="nodownload"
+                crossOrigin="anonymous"
                 onClick={(e) => {
                   e.stopPropagation();
                   setFullscreenMedia({ url: mediaUrl, type: 'video' });

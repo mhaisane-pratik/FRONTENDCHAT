@@ -78,7 +78,14 @@ export const resolveMediaUrl = (url?: string | null): string => {
     return url;
   }
 
-  // Handle relative paths (e.g., /uploads/image.png or uploads/image.png)
+  // ✅ Handle relative paths (e.g., /uploads/image.png or uploads/image.png)
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `${origin}${cleanPath}`;
+  const resolved = `${origin}${cleanPath}`;
+  
+  // Log resolution for debugging
+  if (url.includes("/uploads/")) {
+    // console.debug(`[mediaUrl] Resolved: ${url} → ${resolved}`);
+  }
+  
+  return resolved;
 };

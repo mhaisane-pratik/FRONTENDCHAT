@@ -93,6 +93,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasInitialized = useRef(false);
   const contactsApiUnavailable = useRef(false);
+  const refreshInFlight = useRef(false);
+  const pendingRefresh = useRef(false);
+  const lastRefreshAt = useRef(0);
 
   const normalizeMobileKey = (value?: string) => (value || "").replace(/\D/g, "");
   const getLocalContactsKey = (mobile?: string) => `local_contacts_${normalizeMobileKey(mobile)}`;
@@ -510,9 +513,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // --- Refresh rooms and preload profiles of all chat partners ---
-  const refreshRooms = async () => {
+  const refreshRooms = async (force = false) => {
     if (!currentUser) return;
+    const now = Date.now();
+    const minRefreshIntervalMs = 1200;
+    if (
+      !force &&
+      (refreshInFlight.current || now - lastRefreshAt.current < minRefreshIntervalMs)
+    ) {
+      pendingRefresh.current = true;
+      return;
+    }
 
+    refreshInFlight.current = true;
+    lastRefreshAt.current = now;
     setIsLoading(true);
     try {
       const url = `${API_URL}/api/v1/chats/rooms/${currentUser.mobile}`;
@@ -564,6 +578,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setChatRooms([]);
     } finally {
       setIsLoading(false);
+      refreshInFlight.current = false;
+      if (pendingRefresh.current) {
+        pendingRefresh.current = false;
+        setTimeout(() => {
+          refreshRooms(true);
+        }, 250);
+      }
     }
   };
 
