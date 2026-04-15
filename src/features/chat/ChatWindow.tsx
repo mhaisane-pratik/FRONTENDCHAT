@@ -66,6 +66,9 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [forwardSelectedRooms, setForwardSelectedRooms] = useState<string[]>([]);
   const [forceScrollToBottomKey, setForceScrollToBottomKey] = useState(0);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileViewportTopOffset, setMobileViewportTopOffset] = useState(0);
+  const [mobileKeyboardInset, setMobileKeyboardInset] = useState(0);
 
 
   useEffect(() => {
@@ -141,6 +144,44 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
       hasJoinedRoom.current = true;
     }
   }, [selectedRoom, currentUser]);
+
+  useEffect(() => {
+    const updateViewportState = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileViewport(mobile);
+      if (!mobile) {
+        setMobileViewportTopOffset(0);
+        setMobileKeyboardInset(0);
+        return;
+      }
+
+      const vv = window.visualViewport;
+      if (!vv) {
+        setMobileViewportTopOffset(0);
+        setMobileKeyboardInset(0);
+        return;
+      }
+
+      const topOffset = Math.max(0, Math.round(vv.offsetTop));
+      const keyboardInset = Math.max(
+        0,
+        Math.round(window.innerHeight - (vv.height + vv.offsetTop))
+      );
+      setMobileViewportTopOffset(topOffset);
+      setMobileKeyboardInset(keyboardInset);
+    };
+
+    updateViewportState();
+    window.addEventListener("resize", updateViewportState);
+    window.visualViewport?.addEventListener("resize", updateViewportState);
+    window.visualViewport?.addEventListener("scroll", updateViewportState);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportState);
+      window.visualViewport?.removeEventListener("resize", updateViewportState);
+      window.visualViewport?.removeEventListener("scroll", updateViewportState);
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedRoom || !currentUser) return;
@@ -455,7 +496,10 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
 
   return (
     <div className="flex flex-col w-full h-[100dvh] md:h-full min-h-0 bg-cover relative overflow-hidden" style={getWallpaperStyle(wallpaper)}>
-      <div className="fixed md:sticky top-0 left-0 right-0 md:left-auto md:right-auto z-[120] flex-shrink-0 pt-[env(safe-area-inset-top)]">
+      <div
+        className="fixed md:sticky top-0 left-0 right-0 md:left-auto md:right-auto z-[120] flex-shrink-0 pt-[env(safe-area-inset-top)]"
+        style={isMobileViewport ? { top: `${mobileViewportTopOffset}px` } : undefined}
+      >
         <ChatHeader
           receiver={receiver}
           roomId={selectedRoom || ""}
@@ -528,7 +572,14 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
       </div>
 
       {selectedRoom && typingUsers[selectedRoom] && typingUsers[selectedRoom].size > 0 && (
-        <div className="fixed md:relative left-0 right-0 bottom-[calc(88px+env(safe-area-inset-bottom))] md:bottom-auto px-4 py-1.5 flex gap-2.5 pointer-events-none z-[125]">
+        <div
+          className="fixed md:relative left-0 right-0 bottom-[calc(88px+env(safe-area-inset-bottom))] md:bottom-auto px-4 py-1.5 flex gap-2.5 pointer-events-none z-[125]"
+          style={
+            isMobileViewport
+              ? { bottom: `calc(${mobileKeyboardInset}px + 88px + env(safe-area-inset-bottom))` }
+              : undefined
+          }
+        >
           <div className="bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-md">
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
@@ -542,7 +593,10 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
         </div>
       )}
 
-      <div className="fixed md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto w-full flex-shrink-0 z-[130]">
+      <div
+        className="fixed md:relative bottom-0 left-0 right-0 md:bottom-auto md:left-auto md:right-auto w-full flex-shrink-0 z-[130]"
+        style={isMobileViewport ? { bottom: `${mobileKeyboardInset}px` } : undefined}
+      >
         <InputArea
           roomId={selectedRoom || ""}
           sender={currentUser.mobile}
