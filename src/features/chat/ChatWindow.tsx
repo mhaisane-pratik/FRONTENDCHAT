@@ -197,12 +197,13 @@ export default function ChatWindow({ onBack, toggleSidebar, sidebarHidden }: Cha
               m.is_temp &&
               m.sender_mobile === msg.sender_mobile &&
               m.message_type === msg.message_type &&
-              (m.message || "") === (msg.message || "") &&
-              (m.file_url || "") === (msg.file_url || "")
+              // If it's a media message, don't strictly match the file_url since blob != server URL
+              (msg.message_type !== "text" ? true : (m.message || "") === (msg.message || ""))
           );
 
           if (optimisticIdx >= 0) {
             const next = [...prev];
+            // Preserve local blob URL if the server URL is not yet ready or for immediate playback
             next[optimisticIdx] = { ...msg, is_temp: false };
             return next;
           }

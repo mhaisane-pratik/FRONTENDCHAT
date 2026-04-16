@@ -3,6 +3,7 @@ import { Message } from "./ChatWindow";
 import { socket } from "../../api/socket";
 import { useChat } from "../../contexts/ChatContext";
 import { resolveMediaUrl, API_URL } from "../../utils/mediaUrl";
+import { Mic } from "lucide-react";
 
 interface MessageItemProps {
   message: Message;
@@ -227,7 +228,10 @@ export default function MessageItem({
   const isVideoMessage = Boolean(message.file_url) && (
     message.message_type === "video" || (message.message_type === "file" && looksLikeVideo)
   );
-  const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage;
+  const isAudioMessage = Boolean(message.file_url) && (
+    message.message_type === "audio" || (message.message_type === "file" && /\.(mp3|wav|ogg|webm|m4a)(\?|$)/.test(fileRef))
+  );
+  const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage && !isAudioMessage;
   const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
   const [imageLoadAttempts, setImageLoadAttempts] = useState(0);
   const imageRenderSrc = imageCandidates[imageCandidateIndex] || "";
@@ -480,6 +484,75 @@ export default function MessageItem({
                       <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
                     ) : (
                       <span className="text-white/80 text-[11px] leading-none">
+                        {message.is_delivered ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isAudioMessage && (
+            <div
+              className={`relative rounded-2xl p-3 min-w-[260px] max-w-[320px] shadow-sm ${
+                isSent
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  isSent ? "bg-white/20" : "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400"
+                }`}>
+                  <Mic size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col gap-1">
+                    <audio
+                      key={mediaUrl}
+                      src={(mediaUrl.startsWith('blob:') || mediaUrl.includes('localhost') || mediaUrl.includes('127.0.0.1')) 
+                        ? mediaUrl 
+                        : `${API_URL}/api/v1/proxy-image?url=${encodeURIComponent(mediaUrl)}`}
+                      controls
+                      className="w-full h-8 opacity-90 custom-audio"
+                      preload="metadata"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onPlay={(e) => e.stopPropagation()}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        console.error("Audio playback error:", target.error);
+                        console.log("Audio src that failed:", target.src || "EMPTY SRC");
+                      }}
+                      onLoadedMetadata={(e) => {
+                        const audio = e.currentTarget;
+                        if (audio.duration === Infinity || isNaN(audio.duration)) {
+                          audio.currentTime = 1e101;
+                          audio.ontimeupdate = function() {
+                            this.ontimeupdate = () => {};
+                            audio.currentTime = 0;
+                          };
+                        }
+                      }}
+                    />
+                    <span className={`text-[9px] uppercase tracking-wider font-bold opacity-70 ${isSent ? 'text-white' : 'text-gray-500'}`}>
+                      Voice Message
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute bottom-1 right-2 flex items-center gap-1.5">
+                <span className={`text-[10px] font-medium ${isSent ? "text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
+                  {formatTime(message.created_at)}
+                </span>
+                {isSent && (
+                  <span className="flex items-center">
+                    {message.is_seen ? (
+                      <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                    ) : (
+                      <span className="text-white/70 text-[11px] leading-none">
                         {message.is_delivered ? "✓✓" : "✓"}
                       </span>
                     )}

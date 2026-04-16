@@ -56,6 +56,8 @@ export default function InputArea({
   const [giphySearch, setGiphySearch] = useState("");
   const [giphyResults, setGiphyResults] = useState<any[]>([]);
   const [giphyLoading, setGiphyLoading] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { playNotificationSound } = useChat();
 
@@ -208,31 +210,128 @@ export default function InputArea({
 
   const startRecording = async () => {
     try {
+      const mimeType = 'audio/webm';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.warn(`${mimeType} not supported, falling back to default`);
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported(mimeType) ? mimeType : undefined });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+      
       mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], 'voice-message.webm', { type: 'audio/webm' });
-        setSelectedFile(audioFile);
+
+      mediaRecorder.onstop = async () => {
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, { type: mimeType });
+        
+        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
+        
+        // Directly send the voice message after recording stops
+        await sendVoiceMessage(audioFile);
       };
+
       mediaRecorder.start();
       setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
+      playNotificationSound("send"); // Simple feedback sound
     } catch (error) {
-      setUploadError("Microphone access denied");
+      console.error("Mic error:", error);
+      setUploadError("Microphone access denied or error occurred");
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (cancel = false) => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+
     if (mediaRecorderRef.current && isRecording) {
+      if (cancel) {
+        mediaRecorderRef.current.onstop = null; // Prevent sending
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setRecordingDuration(0);
     }
+  };
+
+  const sendVoiceMessage = async (audioFile: File) => {
+    // Create local preview URL
+    const localUrl = URL.createObjectURL(audioFile);
+    
+    const tempVoiceMsg: Message = {
+      id: `tmp-${Date.now()}`,
+      room_id: roomId,
+      sender_mobile: sender,
+      receiver_mobile: receiver,
+      message_type: "audio",
+      file_url: localUrl,
+      file_name: audioFile.name,
+      file_size: audioFile.size,
+      is_delivered: false,
+      is_seen: false,
+      created_at: new Date().toISOString(),
+      is_temp: true,
+    } as Message;
+    
+    onLocalMessage?.(tempVoiceMsg);
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", audioFile);
+    formData.append("roomId", roomId);
+    formData.append("sender", sender);
+    formData.append("receiver", receiver);
+
+    try {
+      const res = await fetch(`${API_URL}/api/v1/chats/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+
+      if (data?.file_url) {
+        // Clean up local blob URL
+        URL.revokeObjectURL(localUrl);
+
+        socket.emit("send_file", {
+          roomId,
+          sender,
+          receiver,
+          message_type: "audio",
+          file_url: data.file_url,
+          file_name: data.file_name,
+          file_size: data.file_size,
+        });
+        playNotificationSound("send");
+      }
+    } catch (error) {
+      setUploadError("Failed to send voice message");
+      // Could potentially remove the temp message here, but simpler to just show error
+    } finally {
+      setUploading(false);
+    }
+  };
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const sendMessage = async () => {
@@ -561,17 +660,33 @@ export default function InputArea({
               </label>
             </div>
 
-            <div className="flex-1 min-w-0 py-1 sm:py-1.5 px-1 sm:px-2">
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => handleTyping(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Message"
-                rows={1}
-                className="w-full bg-transparent border-none text-[15px] sm:text-[16px] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 outline-none resize-none min-h-[24px] max-h-[150px] overflow-y-auto leading-relaxed"
-                disabled={uploading}
-              />
+            <div className="flex-1 min-w-0 py-1 sm:py-1.5 px-1 sm:px-2 relative">
+              {isRecording ? (
+                <div className="flex items-center gap-3 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded-xl animate-pulse w-full">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
+                  <span className="text-sm font-bold text-red-600 dark:text-red-400 font-mono">
+                    {formatDuration(recordingDuration)}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 italic">Recording...</span>
+                  <button 
+                    onClick={() => stopRecording(true)}
+                    className="ml-auto p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={(e) => handleTyping(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Message"
+                  rows={1}
+                  className="w-full bg-transparent border-none text-[15px] sm:text-[16px] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0 outline-none resize-none min-h-[24px] max-h-[150px] overflow-y-auto leading-relaxed"
+                  disabled={uploading}
+                />
+              )}
             </div>
             
             <button
@@ -589,17 +704,21 @@ export default function InputArea({
 
           <button
             className={`w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-full transition-all duration-300 shadow-lg flex-shrink-0 ${
-              text.trim() || selectedFile 
+              text.trim() || selectedFile || isRecording
               ? 'bg-gradient-to-tr from-indigo-500 to-purple-600 text-white scale-100 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:scale-90' 
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+              : 'bg-indigo-500 text-white hover:bg-indigo-600'
             }`}
-            onClick={sendMessage}
-            disabled={(!text.trim() && !selectedFile) || uploading}
+            onClick={isRecording ? () => stopRecording(false) : (text.trim() || selectedFile ? sendMessage : startRecording)}
+            disabled={uploading}
           >
             {uploading ? (
               <Loader2 size={24} className="animate-spin" />
+            ) : isRecording ? (
+              <Send size={22} className="ml-0.5" />
+            ) : text.trim() || selectedFile ? (
+              <Send size={22} className="ml-0.5 sm:w-7 sm:h-7" />
             ) : (
-              <Send size={22} className={`${text.trim() || selectedFile ? 'ml-0.5' : ''} sm:w-7 sm:h-7`} />
+              <Mic size={22} className="sm:w-7 sm:h-7" />
             )}
           </button>
         </div>
