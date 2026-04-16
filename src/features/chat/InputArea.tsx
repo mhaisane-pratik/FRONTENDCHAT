@@ -3,9 +3,10 @@ import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { socket } from "../../api/socket";
 import { Message } from "./ChatWindow";
 import { useChat } from "../../contexts/ChatContext";
+import { API_URL } from "../../utils/mediaUrl";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const API_URL = "https://zatbackend.onrender.com";
+// Using imported API_URL
 
 import {
   Smile,

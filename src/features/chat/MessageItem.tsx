@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Message } from "./ChatWindow";
 import { socket } from "../../api/socket";
 import { useChat } from "../../contexts/ChatContext";
-import { resolveMediaUrl } from "../../utils/mediaUrl";
+import { resolveMediaUrl, API_URL } from "../../utils/mediaUrl";
 
 interface MessageItemProps {
   message: Message;
@@ -16,7 +16,7 @@ interface MessageItemProps {
   onRefresh: () => void;
 }
 
-const API_URL = "https://zatbackend.onrender.com";
+// Using imported API_URL
 
 export default function MessageItem({ 
   message, 
@@ -239,35 +239,19 @@ export default function MessageItem({
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.stopPropagation();
-    setImageLoadAttempts((prev) => prev + 1);
+    const currentAttempt = imageLoadAttempts + 1;
+    setImageLoadAttempts(currentAttempt);
     
-    // ✅ Improved fallback logic: prioritize proxy URLs after direct attempt fails
-    setImageCandidateIndex((prev) => {
-      const currentAttempt = imageLoadAttempts + 1;
-      
-      // Strategy: Try direct URLs first, then fallback to proxy versions
-      if (currentAttempt === 1 && directImageCandidates.length > 0) {
-        // First attempt failed, try the next direct candidate if available
-        const nextDirect = prev + 1;
-        if (nextDirect < directImageCandidates.length) {
-          console.warn(`[Image][Attempt ${currentAttempt}] Direct URL failed, trying next direct URL:`, imageRenderSrc);
-          return nextDirect;
-        }
-      }
-      
-      // If all direct URLs failed, move to proxy URLs
-      if (currentAttempt > directImageCandidates.length) {
-        const proxyIndex = currentAttempt - directImageCandidates.length - 1;
-        if (proxyIndex < proxyImageCandidates.length) {
-          console.warn(`[Image][Attempt ${currentAttempt}] Trying proxy URL:`, proxyImageCandidates[proxyIndex]);
-          return directImageCandidates.length + proxyIndex;
-        }
-      }
-      
+    console.warn(`[Image][Attempt ${currentAttempt}] Failed to load: ${imageRenderSrc}`);
+
+    // If we have more candidates, try the next one
+    if (imageCandidateIndex + 1 < imageCandidates.length) {
+      setImageCandidateIndex(prev => prev + 1);
+    } else {
       // All candidates exhausted
-      console.error(`[Image][Attempt ${currentAttempt}] All URL candidates failed for:`, message.file_name);
-      return -1;
-    });
+      console.error(`[Image] All URL candidates failed for: ${message.file_name}`);
+      setImageCandidateIndex(-1);
+    }
   };
 
   if (isDeleting) {

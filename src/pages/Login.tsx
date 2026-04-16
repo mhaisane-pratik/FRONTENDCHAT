@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useChat } from "../contexts/ChatContext";
 import { socket } from "../api/socket";
 import { 
@@ -12,7 +12,46 @@ const API_URL = "https://zatbackend.onrender.com";
 
 export default function ChatLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setCurrentUser, currentUser } = useChat();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ssoToken = params.get("ssoToken");
+
+    if (ssoToken) {
+      handleSsoLogin(ssoToken);
+    }
+  }, []);
+
+  const handleSsoLogin = async (token: string) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const SSO_BACKEND_URL = "http://localhost:4002";
+      const res = await fetch(`${SSO_BACKEND_URL}/api/v1/auth/sso-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sso_token: token }),
+      });
+
+      if (!res.ok) throw new Error("SSO Login failed");
+
+      const data = await res.json();
+      
+      // Save user and token
+      localStorage.setItem("chatUser", JSON.stringify(data.user));
+      localStorage.setItem("chatToken", data.token);
+      setCurrentUser(data.user);
+
+      navigate("/chat", { replace: true });
+    } catch (err) {
+      console.error("SSO Error:", err);
+      setError("Synchronized login failed. Please login manually.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [countryCode, setCountryCode] = useState("+91");
   const [localNumber, setLocalNumber] = useState("");

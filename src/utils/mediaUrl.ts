@@ -1,8 +1,8 @@
 // File: src/utils/mediaUrl.ts
 
 // Standard Vite environment variable access
-const API_URL = "https://zatbackend.onrender.com";
-const SOCKET_URL = "https://zatbackend.onrender.com";
+export const API_URL = "https://zatbackend.onrender.com";
+export const SOCKET_URL = "https://zatbackend.onrender.com";
 
 const getApiOrigin = () => {
   try {
@@ -79,7 +79,13 @@ export const resolveMediaUrl = (url?: string | null): string => {
   }
 
   // ✅ Handle relative paths (e.g., /uploads/image.png or uploads/image.png)
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  // CRITICAL: Normalize paths that might include 'src/' from backend storage
+  const normalizedPath = url
+    .replace(/\\/g, "/")
+    .replace(/^\/?src\/uploads\//i, "/uploads/")
+    .replace(/^uploads\//i, "/uploads/");
+
+  const cleanPath = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
   const resolved = `${origin}${cleanPath}`;
   
   // Log resolution for debugging

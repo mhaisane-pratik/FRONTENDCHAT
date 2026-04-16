@@ -67,6 +67,23 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
     return true;
   });
 
+  // Remove exact duplicates (same other user or same group ID)
+  const uniqueRooms = [];
+  const seenIds = new Set();
+  
+  for (const room of filteredRooms) {
+    const otherUser = room.is_group 
+      ? `group_${room.id}` 
+      : (room.other_user || (room.participant_1 === currentUser?.mobile ? room.participant_2 : room.participant_1));
+    
+    if (otherUser && !seenIds.has(otherUser)) {
+      seenIds.add(otherUser);
+      uniqueRooms.push(room);
+    }
+  }
+
+  const roomsToDisplay = uniqueRooms;
+
   const unreadCount = chatRooms.filter((r) => r.unread_count > 0).length;
   const groupsCount = chatRooms.filter((r) => r.is_group).length;
 
@@ -185,7 +202,7 @@ export default function Sidebar({ onSettingsClick, isMobile }: SidebarProps) {
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
-        <ChatList rooms={filteredRooms} searchTerm={searchTerm} activeFilter={activeFilter} />
+        <ChatList rooms={roomsToDisplay} searchTerm={searchTerm} activeFilter={activeFilter} />
       </div>
 
       {/* Dropdown Menu */}
