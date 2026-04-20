@@ -933,7 +933,8 @@ export default function MessageItem({
           defaultName={getDisplayName(message.sender_mobile, "")}
           onClose={() => setShowSaveContact(false)}
         />
-      )}
+
+)}
     </>
   );
 }
