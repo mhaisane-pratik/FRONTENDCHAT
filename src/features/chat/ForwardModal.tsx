@@ -6,7 +6,7 @@ import { socket } from "../../api/socket";
 import { Message } from "./ChatWindow";
 import "./ForwardModal.css";
 
-const API_URL = "https://zatbackend.onrender.com"; // ✅ Production API
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com");
 
 interface ForwardModalProps {
   messages: Message[];

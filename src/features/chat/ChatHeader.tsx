@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const API_URL = "https://zatbackend.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com");
 
 interface ChatHeaderProps {
   receiver: string;

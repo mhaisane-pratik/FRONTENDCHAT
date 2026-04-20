@@ -5,7 +5,7 @@ import { WALLPAPERS } from "./wallpapers";
 import { resolveMediaUrl } from "../../utils/mediaUrl";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const API_URL = "https://zatbackend.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com");
 const API_KEY = "ZATCHAT_PRATEEK9373";
 
 interface SettingsPanelProps {

@@ -1,8 +1,9 @@
 // File: video-call-main/src/api/socket.ts
 
 import { io, Socket } from "socket.io-client";
+import { API_URL } from "./config";
 
-const SOCKET_URL = "https://zatbackend.onrender.com";
+const SOCKET_URL = API_URL;
 
 // 🔐 API KEY (same as backend .env)
 const API_KEY = "ZATCHAT_PRATEEK9373";

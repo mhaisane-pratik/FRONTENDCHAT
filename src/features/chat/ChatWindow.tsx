@@ -9,7 +9,7 @@ import MediaViewer from "./MediaViewer";
 import { ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const API_URL = "https://zatbackend.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com");
 const API_KEY = "ZATCHAT_PRATEEK9373";
 
 export interface Message {

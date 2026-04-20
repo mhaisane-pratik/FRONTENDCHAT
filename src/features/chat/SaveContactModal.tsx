@@ -15,7 +15,7 @@ export default function SaveContactModal({ contactUsername, defaultName, onClose
   const [error, setError] = useState<string | null>(null);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const API_URL = "https://zatbackend.onrender.com";
+  const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com");
   const normalizeMobileKey = (value?: string) => (value || "").replace(/\D/g, "");
 
   const handleSave = async () => {

@@ -29,7 +29,7 @@ export default function ChatList({ rooms }: ChatListProps) {
     // Mark as read in backend
     try {
       await fetch(
-        `https://zatbackend.onrender.com/api/v1/chats/mark-read/${room.id}/${currentUser.mobile}`,
+        `${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "https://zatbackend.onrender.com")}/api/v1/chats/mark-read/${room.id}/${currentUser.mobile}`,
         {
           method: "POST",
           headers: { "x-api-key": "ZATCHAT_PRATEEK9373" },
