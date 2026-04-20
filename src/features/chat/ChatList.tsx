@@ -22,6 +22,31 @@ export default function ChatList({ rooms }: ChatListProps) {
     );
   }
 
+  const { setChatRooms } = useChat();
+
+  const handleRoomClick = async (room: any) => {
+    setSelectedRoom(room.id);
+    // Mark as read in backend
+    try {
+      await fetch(
+        `https://zatbackend.onrender.com/api/v1/chats/mark-read/${room.id}/${currentUser.mobile}`,
+        {
+          method: "POST",
+          headers: { "x-api-key": "ZATCHAT_PRATEEK9373" },
+        }
+      );
+      // Update unread_count in frontend state
+      setChatRooms((prevRooms: any[]) =>
+        prevRooms.map((r) =>
+          r.id === room.id ? { ...r, unread_count: 0 } : r
+        )
+      );
+    } catch (err) {
+      // Ignore error, still select room
+      console.error("Failed to mark as read", err);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto">
       {rooms.map((room) => {
@@ -43,7 +68,7 @@ export default function ChatList({ rooms }: ChatListProps) {
             key={room.id}
             roomId={room.id}
             displayName={displayName}
-            avatarUrl={profile?.profile_picture}
+            avatarUrl={isGroup ? room.group_icon : profile?.profile_picture}
             lastMessage={room.last_message}
             lastMessageSender={room.last_message_sender}
             lastMessageTime={room.last_message_time}
@@ -53,7 +78,7 @@ export default function ChatList({ rooms }: ChatListProps) {
             isMuted={room.is_muted}
             isSelected={selectedRoom === room.id}
             typingUsers={typingUsers[room.id] ? Array.from(typingUsers[room.id]) : undefined}
-            onClick={() => setSelectedRoom(room.id)}
+            onClick={() => handleRoomClick(room)}
           />
         );
       })}

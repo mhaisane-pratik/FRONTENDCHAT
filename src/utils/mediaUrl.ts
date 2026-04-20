@@ -62,11 +62,10 @@ export const resolveMediaUrl = (url?: string | null): string => {
       const isLocalhost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
       const backendOrigin = getProductionApiOrigin();
       const backendHostname = new URL(backendOrigin).hostname;
-      const currentIsLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       
-      // CRITICAL FIX: If we are in production but the image URL points to localhost or an insecure backend URL, rewrite it.
-      if ((isLocalhost || (parsed.hostname === backendHostname && parsed.protocol === "http:")) && !currentIsLocalhost) {
-        return `${origin}${parsed.pathname}${parsed.search}`;
+      // Always prefer the configured backend origin over stale localhost/http URLs.
+      if (isLocalhost) {
+        return `${backendOrigin}${parsed.pathname}${parsed.search}`;
       }
 
       if (parsed.hostname === backendHostname && parsed.protocol === "http:") {

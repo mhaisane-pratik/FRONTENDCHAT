@@ -140,14 +140,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getDisplayName = (targetMobile: string, fallback?: string) => {
+    if (!targetMobile) return fallback || "Unknown";
     const normalizedTarget = normalizeMobileKey(targetMobile);
+    // 1. Check contacts (local address book)
     if (contacts.has(normalizedTarget)) {
       return contacts.get(normalizedTarget) as string;
     }
-    // Also try checking the userProfiles for backend display_name
+    // 2. Check userProfiles (fetched from backend)
     if (userProfiles.has(targetMobile)) {
-      return userProfiles.get(targetMobile)?.display_name || targetMobile;
+      const profile = userProfiles.get(targetMobile);
+      if (profile?.display_name) return profile.display_name;
     }
+    // 3. Try to find by normalized mobile in userProfiles
+    for (const [key, profile] of userProfiles.entries()) {
+      if (normalizeMobileKey(key) === normalizedTarget && profile?.display_name) {
+        return profile.display_name;
+      }
+    }
+    // 4. Fallback to provided fallback or mobile
     return fallback || targetMobile;
   };
 

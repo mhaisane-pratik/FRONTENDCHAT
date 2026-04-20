@@ -24,6 +24,7 @@ export default function GroupInfoModal({ groupId, onClose }: GroupInfoModalProps
   const [editingName, setEditingName] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [showAddMembers, setShowAddMembers] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
   const [availableUsers, setAvailableUsers] = useState<GroupMember[]>([]);
   const [selectedNewMembers, setSelectedNewMembers] = useState<Set<string>>(new Set());
 
@@ -112,6 +113,46 @@ export default function GroupInfoModal({ groupId, onClose }: GroupInfoModalProps
     } catch (err) {
       console.error("Failed to update group name:", err);
       alert("❌ Failed to update group name");
+    }
+  };
+
+  const handleGroupIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+    
+    setUploadingIcon(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("roomId", groupId);
+      formData.append("sender", currentUser.mobile);
+      formData.append("receiver", "group");
+
+      const uploadRes = await fetch(`${API_URL}/api/v1/chats/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      
+      const uploadData = await uploadRes.json();
+      if (!uploadData.file_url) throw new Error("Failed to upload image");
+
+      const res = await fetch(`${API_URL}/api/v1/chats/update-group`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId, groupIcon: uploadData.file_url }),
+      });
+      
+      if (res.ok) {
+        // Emit event to update in real-time
+        socket.emit("render_message", { room_id: groupId });
+        await refreshRooms();
+      }
+    } catch (err) {
+      console.error("Failed to update group icon:", err);
+      alert("❌ Failed to update group profile picture");
+    } finally {
+      setUploadingIcon(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -244,8 +285,20 @@ export default function GroupInfoModal({ groupId, onClose }: GroupInfoModalProps
 
         <div className="flex-1 overflow-y-auto p-5 bg-white dark:bg-gray-800">
           <div className="text-center py-5 border-b border-gray-200 dark:border-gray-700 mb-5">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-5xl mx-auto mb-4 shadow-lg">
-              {room.group_icon || "👥"}
+            <div className="relative inline-block group mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-5xl mx-auto shadow-lg overflow-hidden">
+                {uploadingIcon ? (
+                  <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : room.group_icon && (room.group_icon.startsWith('http') || room.group_icon.includes('/')) ? (
+                  <img src={resolveMediaUrl(room.group_icon)} alt="Group" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white">{room.group_icon || "👥"}</span>
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <span className="text-white text-xs font-semibold">Change</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleGroupIconUpload} disabled={uploadingIcon} />
+              </label>
             </div>
 
             {editingName && isAdmin ? (

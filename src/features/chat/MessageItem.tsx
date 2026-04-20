@@ -3,7 +3,8 @@ import { Message } from "./ChatWindow";
 import { socket } from "../../api/socket";
 import { useChat } from "../../contexts/ChatContext";
 import { resolveMediaUrl, API_URL } from "../../utils/mediaUrl";
-import { Mic } from "lucide-react";
+import { Mic, Eye } from "lucide-react";
+import SaveContactModal from "./SaveContactModal";
 
 interface MessageItemProps {
   message: Message;
@@ -19,7 +20,7 @@ interface MessageItemProps {
 
 // Using imported API_URL
 
-export default function MessageItem({ 
+export default function MessageItem({
   message, 
   isSent, 
   currentUser,
@@ -30,9 +31,42 @@ export default function MessageItem({
   isHighlighted,
   onRefresh 
 }: MessageItemProps) {
-  const { getDisplayName } = useChat();
+  const { chatRooms, getDisplayName } = useChat();
+  const [showSeenBy, setShowSeenBy] = useState(false);
+  const [seenByUsers, setSeenByUsers] = useState([]);
+  const [loadingSeenBy, setLoadingSeenBy] = useState(false);
+  const [showSaveContact, setShowSaveContact] = useState(false);
+  const isGroup = (() => {
+    const room = chatRooms?.find(r => r.id === message.room_id);
+    return room?.is_group;
+  })();
+
+  const handleShowSeenBy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowSeenBy(true);
+    setLoadingSeenBy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/messages/${message.id}/seen-by`, {
+        headers: { "x-api-key": "ZATCHAT_PRATEEK9373" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSeenByUsers(data.users || []);
+      } else {
+        setSeenByUsers([]);
+      }
+    } catch {
+      setSeenByUsers([]);
+    }
+    setLoadingSeenBy(false);
+  };
+
+  const handleCloseSeenBy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowSeenBy(false);
+  };
   const [showActions, setShowActions] = useState(false);
-  const [fullscreenMedia, setFullscreenMedia] = useState<{url: string, type: string} | null>(null);
+  const [fullscreenMedia, setFullscreenMedia] = useState<{url: string, type: 'image' | 'video' | 'pdf'} | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -67,37 +101,30 @@ export default function MessageItem({
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      if (showActions) {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
     };
   }, [showActions]);
 
-  useEffect(() => {
-    if (isHighlighted && wrapperRef.current) {
-      wrapperRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  const renderMessageContent = (content: string = "") => {
+    if (!content) return null;
+    
+    // Process markdown (bold, italic, strikethrough, monospace)
+    let processedContent = content;
+    
+    if (searchQuery && content.toLowerCase().includes(searchQuery.toLowerCase())) {
+      const parts = content.split(new RegExp(`(${searchQuery})`, "gi"));
+      return parts.map((part, i) =>
+        part.toLowerCase() === searchQuery.toLowerCase() ? (
+          <span key={i} className="bg-yellow-300 dark:bg-yellow-600 text-black rounded px-0.5 font-medium">{part}</span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      );
     }
-  }, [isHighlighted]);
-
-  const renderMessageContent = (text: string | null | undefined) => {
-    if (!text) return null;
-    if (!searchQuery) return text;
-    try {
-      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
-      return parts.map((part, i) => {
-        if (part.toLowerCase() === searchQuery.toLowerCase()) {
-          return (
-            <mark 
-              key={i} 
-              className={`${isHighlighted ? 'bg-orange-500 text-white animate-pulse' : 'bg-yellow-300 text-black'} rounded-sm px-[2px] shadow-sm transition-colors duration-300`}
-            >
-              {part}
-            </mark>
-          );
-        }
-        return part;
-      });
-    } catch (e) {
-      return text;
-    }
+    
+    return processedContent;
   };
 
   const handleMessageClick = () => {
@@ -173,11 +200,29 @@ export default function MessageItem({
   })();
   const rawFileUrl = (message.file_url || "").trim();
   const normalizedRawPath = rawFileUrl.replace(/\\/g, "/");
+  const uploadPathFromRawUrl = (() => {
+    if (!normalizedRawPath) return "";
+    if (!/^https?:\/\//i.test(normalizedRawPath)) return normalizedRawPath;
+
+    try {
+      const parsed = new URL(normalizedRawPath);
+      return `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return normalizedRawPath;
+    }
+  })();
   const normalizedUploadPath = normalizedRawPath
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/?src\/uploads\//i, "/uploads/")
+    .replace(/^uploads\//i, "/uploads/");
+  const normalizedUploadPathFromRawUrl = uploadPathFromRawUrl
     .replace(/^\/?src\/uploads\//i, "/uploads/")
     .replace(/^uploads\//i, "/uploads/");
   const directNormalizedUploadUrl = normalizedUploadPath
     ? resolveMediaUrl(normalizedUploadPath)
+    : "";
+  const directNormalizedUploadUrlFromRawUrl = normalizedUploadPathFromRawUrl
+    ? resolveMediaUrl(normalizedUploadPathFromRawUrl)
     : "";
   const localhostRewrittenUrl = normalizedRawPath
     ? normalizedRawPath.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, apiOrigin)
@@ -194,14 +239,16 @@ export default function MessageItem({
     new Set(
       [
         // ✅ Prioritize direct backend URL first (most likely to work)
+        directNormalizedUploadUrlFromRawUrl,
         toAbsoluteBackendUrl(normalizedUploadPath),
-        toAbsoluteBackendUrl(normalizedRawPath),
         // Then try other resolved URLs
         mediaUrl,
         directNormalizedUploadUrl,
         localhostRewrittenUrl,
         // Finally, try raw external URLs
-        /^https?:\/\//i.test(rawFileUrl) ? rawFileUrl : "",
+        /^https?:\/\//i.test(rawFileUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawFileUrl)
+          ? rawFileUrl
+          : "",
       ].filter(Boolean)
     )
   );
@@ -220,8 +267,8 @@ export default function MessageItem({
     ])
   );
   const fileRef = `${message.file_url || ""} ${message.file_name || ""}`.toLowerCase();
-  const looksLikeImage = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)(\?|$)/.test(fileRef);
-  const looksLikeVideo = /\.(mp4|webm|mov|m4v|avi|mkv|3gp)(\?|$)/.test(fileRef);
+  const looksLikeImage = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif|avif)(\?|\s|$)/.test(fileRef);
+  const looksLikeVideo = /\.(mp4|webm|mov|m4v|avi|mkv|3gp)(\?|\s|$)/.test(fileRef);
   const isImageMessage = Boolean(message.file_url) && (
     message.message_type === "image" || (message.message_type === "file" && looksLikeImage)
   );
@@ -229,9 +276,14 @@ export default function MessageItem({
     message.message_type === "video" || (message.message_type === "file" && looksLikeVideo)
   );
   const isAudioMessage = Boolean(message.file_url) && (
-    message.message_type === "audio" || (message.message_type === "file" && /\.(mp3|wav|ogg|webm|m4a)(\?|$)/.test(fileRef))
+    message.message_type === "audio" || (message.message_type === "file" && /\.(mp3|wav|ogg|webm|m4a)(\?|\s|$)/.test(fileRef))
   );
-  const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage && !isAudioMessage;
+  
+  const isPdfMessage = Boolean(message.file_url) && (
+    message.message_type === "file" && /\.pdf(\?|\s|$)/.test(fileRef)
+  );
+
+  const isGenericFileMessage = Boolean(message.file_url) && !isImageMessage && !isVideoMessage && !isAudioMessage && !isPdfMessage;
   const [imageCandidateIndex, setImageCandidateIndex] = useState(0);
   const [imageLoadAttempts, setImageLoadAttempts] = useState(0);
   const imageRenderSrc = imageCandidates[imageCandidateIndex] || "";
@@ -290,7 +342,18 @@ export default function MessageItem({
         ref={wrapperRef}
         className={`flex mb-2 px-4 relative transition-all duration-500 ${isSent ? "justify-end" : "justify-start"} ${isHighlighted ? "bg-black/5 dark:bg-white/5 py-1 rounded-lg" : ""}`}
       >
-        <div className={`relative max-w-[85%] sm:max-w-[75%] md:max-w-[65%] group ${isSent ? "items-end" : "items-start"}`} onClick={handleMessageClick}>
+        <div className={`relative max-w-[85%] sm:max-w-[75%] md:max-w-[65%] group ${isSent ? "items-end" : "items-start flex flex-col"}`} onClick={handleMessageClick}>
+          {isGroup && !isSent && (
+            <div 
+              className="text-[12px] font-semibold text-indigo-500 dark:text-indigo-400 mb-0.5 ml-2 cursor-pointer hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSaveContact(true);
+              }}
+            >
+              {getDisplayName(message.sender_mobile) || message.sender_mobile}
+            </div>
+          )}
           {message.message_type === "text" && (
             <div
               className={`relative px-3 py-2 pb-6 shadow-sm rounded-2xl ${
@@ -323,10 +386,47 @@ export default function MessageItem({
                 </div>
               )}
 
-              <p className="m-0 text-[14.5px] leading-snug break-words whitespace-pre-wrap select-text relative">
-                {renderMessageContent(message.message)}
-                <span className="inline-block w-[60px] h-0"></span>
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="m-0 text-[14.5px] leading-snug break-words whitespace-pre-wrap select-text relative">
+                  {renderMessageContent(message.message)}
+                  <span className="inline-block w-[60px] h-0"></span>
+                </p>
+                {/* Eye button for sent group messages */}
+                {isSent && isGroup && (
+                  <button
+                    className="ml-2 p-1 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition"
+                    title="Show who has seen this message"
+                    onClick={handleShowSeenBy}
+                  >
+                    <Eye size={16} className="text-white dark:text-indigo-300" />
+                  </button>
+                )}
+              </div>
+                    {/* Seen by popup/modal */}
+                    {showSeenBy && (
+                      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40" onClick={handleCloseSeenBy}>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 min-w-[260px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-bold text-indigo-600 dark:text-indigo-300 text-lg">Seen by</span>
+                            <button className="text-gray-500 hover:text-indigo-600" onClick={handleCloseSeenBy}>&times;</button>
+                          </div>
+                          {loadingSeenBy ? (
+                            <div className="text-center py-4 text-gray-500">Loading...</div>
+                          ) : seenByUsers.length === 0 ? (
+                            <div className="text-center py-4 text-gray-400">No one has seen this message yet.</div>
+                          ) : (
+                            <ul className="max-h-48 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700">
+                              {seenByUsers.map(u => (
+                                <li key={u.user_mobile} className="py-2 flex items-center gap-2">
+                                  <span className="font-medium text-gray-800 dark:text-gray-200">{getDisplayName(u.user_mobile, u.user_mobile)}</span>
+                                  <span className="text-xs text-gray-400 ml-auto">{formatTime(u.seen_at)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    )}
               
               <div className="absolute bottom-1 right-2 flex items-center gap-1.5 bg-gradient-to-l from-black/5 to-transparent px-1 rounded">
                 <span className={`text-[10px] font-medium ${isSent ? "text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
@@ -634,6 +734,76 @@ export default function MessageItem({
             </div>
           )}
 
+          {isPdfMessage && (
+            <div
+              className={`relative rounded-2xl p-2 min-w-[240px] max-w-[320px] shadow-sm cursor-pointer hover:opacity-90 transition ${
+                isSent
+                  ? "bg-gradient-to-r from-red-500 to-red-600"
+                  : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullscreenMedia({ url: mediaUrl, type: 'pdf' });
+              }}
+            >
+              {message.reply_to && (
+                <div className="mb-1.5 rounded-lg overflow-hidden cursor-pointer hover:opacity-90">
+                  <div className="flex">
+                    <div className={`w-1 flex-shrink-0 ${isSent ? "bg-white/90" : "bg-red-400"}`}></div>
+                    <div className={`flex-1 p-1 ${isSent ? "bg-white/15" : "bg-red-50 dark:bg-red-900/20"}`}>
+                      <div className={`font-semibold text-[10px] mb-0.5 ${isSent ? "text-white" : "text-red-700 dark:text-red-400"}`}>
+                        {getDisplayName(message.reply_to.sender_mobile)}
+                      </div>
+                      <div className="text-[10px] line-clamp-2 opacity-85 text-gray-700 dark:text-gray-300">
+                        {message.reply_to.message || "📎 Attachment"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 p-1.5 rounded-lg">
+                <div className={`w-10 h-10 bg-white/20 dark:bg-gray-700 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${
+                  isSent ? "text-white" : "text-red-600 dark:text-red-400"
+                }`}>
+                  📄
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-xs font-semibold truncate ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                    {message.file_name || "Document.pdf"}
+                  </div>
+                  {message.file_size && (
+                    <div className={`text-[10px] mt-0.5 ${isSent ? "text-white/75" : "text-gray-500 dark:text-gray-400"}`}>
+                      {(message.file_size / 1024).toFixed(2)} KB
+                    </div>
+                  )}
+                </div>
+              </div>
+              {message.message && (
+                <p className={`mt-1.5 mb-2 text-sm break-words select-text relative ${isSent ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                  {renderMessageContent(message.message)}
+                  <span className="inline-block w-[60px] h-0"></span>
+                </p>
+              )}
+              <div className="absolute bottom-1 right-2 flex items-center gap-1 bg-black/5 dark:bg-black/20 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className={`text-[10px] font-medium ${isSent ? "text-white/90" : "text-gray-500 dark:text-gray-400"}`}>
+                  {formatTime(message.created_at)}
+                </span>
+                {isSent && (
+                  <span className="flex items-center">
+                    {message.is_seen ? (
+                      <span className="text-cyan-300 font-bold text-[11px] leading-none drop-shadow-sm">✓✓</span>
+                    ) : (
+                      <span className="text-white/80 text-[11px] leading-none">
+                        {message.is_delivered ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {showActions && (
             <div className={`absolute flex gap-1 p-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-[100000] animate-slideInActions ${
               isSent ? "bottom-full right-0" : "bottom-full left-0"
@@ -695,12 +865,18 @@ export default function MessageItem({
                 alt="Full size"
                 className="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
               />
-            ) : (
+            ) : fullscreenMedia.type === 'video' ? (
               <video
                 src={fullscreenMedia.url}
                 controls
                 autoPlay
                 className="max-w-full max-h-[80vh] rounded-lg shadow-2xl"
+              />
+            ) : (
+              <iframe
+                src={`${fullscreenMedia.url}#view=FitH`}
+                className="w-[85vw] h-[85vh] rounded-xl shadow-2xl bg-white"
+                title="PDF Viewer"
               />
             )}
             <a
@@ -749,6 +925,14 @@ export default function MessageItem({
             </div>
           </div>
         </div>
+      )}
+
+      {showSaveContact && (
+        <SaveContactModal 
+          contactUsername={message.sender_mobile} 
+          defaultName={getDisplayName(message.sender_mobile, "")}
+          onClose={() => setShowSaveContact(false)}
+        />
       )}
     </>
   );

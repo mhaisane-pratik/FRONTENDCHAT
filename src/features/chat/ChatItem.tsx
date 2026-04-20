@@ -109,8 +109,14 @@ export default function ChatItem({
     >
       <div className="relative mr-2.5 flex-shrink-0">
         {isGroup ? (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg font-semibold uppercase">
-            {displayName?.charAt(0)?.toUpperCase()}
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg font-semibold uppercase overflow-hidden">
+            {avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.includes('/')) ? (
+              <img src={resolveMediaUrl(avatarUrl)} alt={displayName} className="w-full h-full object-cover" />
+            ) : avatarUrl ? (
+              <span>{avatarUrl}</span>
+            ) : (
+              <span>{displayName?.charAt(0)?.toUpperCase()}</span>
+            )}
           </div>
         ) : (
           <>

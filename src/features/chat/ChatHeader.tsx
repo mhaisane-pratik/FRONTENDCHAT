@@ -175,9 +175,14 @@ export default function ChatHeader({
                   shadow-md
                   text-base md:text-xl
                   ring-2 ring-white dark:ring-gray-800
+                  overflow-hidden
                 `}
               >
-                {groupIcon || <Users size={20} className="md:w-6 md:h-6" />}
+                {groupIcon && (groupIcon.startsWith('http') || groupIcon.includes('/')) ? (
+                  <img src={resolveMediaUrl(groupIcon)} alt={room?.group_name || "Group"} className="w-full h-full object-cover" />
+                ) : (
+                  groupIcon || <Users size={20} className="md:w-6 md:h-6" />
+                )}
               </div>
             ) : (
               <>
