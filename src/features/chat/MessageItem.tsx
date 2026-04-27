@@ -206,24 +206,34 @@ export default function MessageItem({
 
     try {
       const parsed = new URL(normalizedRawPath);
-      return `${parsed.pathname}${parsed.search}`;
+      // Only extract pathname if it's a localhost or backend URL
+      if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.origin === apiOrigin) {
+        return `${parsed.pathname}${parsed.search}`;
+      }
+      return normalizedRawPath; // Return the full URL for external sites like Tenor
     } catch {
       return normalizedRawPath;
     }
   })();
   const normalizedUploadPath = normalizedRawPath
-    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, "") // Only strip localhost
+    .replace(new RegExp(`^${apiOrigin}`), "") // Only strip apiOrigin
     .replace(/^\/?src\/uploads\//i, "/uploads/")
     .replace(/^uploads\//i, "/uploads/");
   const normalizedUploadPathFromRawUrl = uploadPathFromRawUrl
     .replace(/^\/?src\/uploads\//i, "/uploads/")
     .replace(/^uploads\//i, "/uploads/");
-  const directNormalizedUploadUrl = normalizedUploadPath
-    ? resolveMediaUrl(normalizedUploadPath)
-    : "";
-  const directNormalizedUploadUrlFromRawUrl = normalizedUploadPathFromRawUrl
-    ? resolveMediaUrl(normalizedUploadPathFromRawUrl)
-    : "";
+  
+  // If it's already an external absolute URL, don't pass it through resolveMediaUrl which might prepend origin again.
+  const isExternalUrl = /^https?:\/\//i.test(normalizedUploadPathFromRawUrl) && !normalizedUploadPathFromRawUrl.includes('localhost');
+  const directNormalizedUploadUrlFromRawUrl = isExternalUrl 
+    ? normalizedUploadPathFromRawUrl 
+    : (normalizedUploadPathFromRawUrl ? resolveMediaUrl(normalizedUploadPathFromRawUrl) : "");
+    
+  const directNormalizedUploadUrl = /^https?:\/\//i.test(normalizedUploadPath) && !normalizedUploadPath.includes('localhost')
+    ? normalizedUploadPath
+    : (normalizedUploadPath ? resolveMediaUrl(normalizedUploadPath) : "");
+    
   const localhostRewrittenUrl = normalizedRawPath
     ? normalizedRawPath.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, apiOrigin)
     : "";
@@ -238,14 +248,12 @@ export default function MessageItem({
   const directImageCandidates = Array.from(
     new Set(
       [
-        // ✅ Prioritize direct backend URL first (most likely to work)
-        directNormalizedUploadUrlFromRawUrl,
-        toAbsoluteBackendUrl(normalizedUploadPath),
-        // Then try other resolved URLs
+        // ✅ For external URLs like Tenor or Supabase storage, put them first and unaltered
+        isExternalUrl ? normalizedUploadPathFromRawUrl : directNormalizedUploadUrlFromRawUrl,
         mediaUrl,
+        toAbsoluteBackendUrl(normalizedUploadPath),
         directNormalizedUploadUrl,
         localhostRewrittenUrl,
-        // Finally, try raw external URLs
         /^https?:\/\//i.test(rawFileUrl) && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawFileUrl)
           ? rawFileUrl
           : "",

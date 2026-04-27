@@ -20,8 +20,12 @@ export default function NewChatModal({ onClose }: NewChatModalProps) {
     if (cleaned.length === 10) {
       return "+91" + cleaned;
     }
+    // Already has +91 or 91
     if (cleaned.length === 12 && cleaned.startsWith("91")) {
       return "+" + cleaned;
+    }
+    if (cleaned.length === 13 && cleaned.startsWith("+91")) {
+      return cleaned;
     }
     return phone; // fallback for non-standard or testing usernames
   };
@@ -84,6 +88,8 @@ export default function NewChatModal({ onClose }: NewChatModalProps) {
           body: JSON.stringify({
             mobile: finalTargetMobile,
             display_name: mobileNo,
+            country_code: "+91", // Default for now as requested
+            mobile_number: mobileNo
           }),
         });
         
@@ -169,14 +175,18 @@ export default function NewChatModal({ onClose }: NewChatModalProps) {
               <div className="bg-gray-100 dark:bg-gray-600 px-4 py-3 flex items-center justify-center border-r border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-medium">
                 +91
               </div>
-              <input
-                id="mobileNo"
-                type="text"
-                value={mobileNo}
-                onChange={(e) => {
-                  setMobileNo(e.target.value);
-                  setError("");
-                }}
+                <input
+                  id="mobileNo"
+                  type="text"
+                  value={mobileNo}
+                  maxLength={10}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    if (val.length <= 10) {
+                      setMobileNo(val);
+                      setError("");
+                    }
+                  }}
                 onKeyDown={handleKeyPress}
                 placeholder="Enter 10-digit number"
                 autoFocus

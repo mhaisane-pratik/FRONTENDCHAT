@@ -119,7 +119,10 @@ export default function ChatLogin() {
       const res = await fetch(`${API_URL}/api/v1/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: formattedPhone }),
+        body: JSON.stringify({ 
+          phone: formattedPhone,
+          country_code: countryCode
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -156,6 +159,7 @@ export default function ChatLogin() {
           phone: mobileNumber,
           otp: otpValue,
           name: mobileNumber,
+          country_code: countryCode
         }),
       });
       const data = await res.json();
@@ -373,10 +377,14 @@ export default function ChatLogin() {
                           <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input
                             type="tel"
-                            placeholder="Enter mobile number"
+                            placeholder="Enter 10-digit number"
+                            maxLength={10}
                             className="w-full pl-9 pr-3 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm text-slate-900 outline-none transition-all duration-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400"
                             value={localNumber}
-                            onChange={(e) => setLocalNumber(e.target.value.replace(/\D/g, ""))}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "");
+                              if (val.length <= 10) setLocalNumber(val);
+                            }}
                             disabled={isLoading}
                           />
                         </div>
