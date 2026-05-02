@@ -76,29 +76,11 @@ export default function NewChatModal({ onClose }: NewChatModalProps) {
         }
       }
 
-      // 3. If neither exists, create a placeholder profile using the normalized one
+            // 3. If neither exists, show an error as requested
       if (!userData) {
-        finalTargetMobile = normalizedMobile;
-        const createRes = await fetch(`${API_URL}/api/v1/users`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "x-api-key": API_KEY 
-          },
-          body: JSON.stringify({
-            mobile: finalTargetMobile,
-            display_name: mobileNo,
-            country_code: "+91", // Default for now as requested
-          }),
-        });
-        
-        if (!createRes.ok) {
-          setError("Failed to start chat with new user");
-          setLoading(false);
-          return;
-        }
-        
-        userData = await createRes.json();
+        setError("This user does not exist. Chat not possible.");
+        setLoading(false);
+        return;
       }
 
       const roomId = [currentUser?.mobile, finalTargetMobile].sort().join("__");
