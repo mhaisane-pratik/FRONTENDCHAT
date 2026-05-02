@@ -89,7 +89,6 @@ export default function NewChatModal({ onClose }: NewChatModalProps) {
             mobile: finalTargetMobile,
             display_name: mobileNo,
             country_code: "+91", // Default for now as requested
-            mobile_number: mobileNo
           }),
         });
         

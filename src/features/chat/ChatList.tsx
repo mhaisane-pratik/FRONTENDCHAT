@@ -9,7 +9,7 @@ interface ChatListProps {
 }
 
 export default function ChatList({ rooms }: ChatListProps) {
-  const { currentUser, selectedRoom, setSelectedRoom, userProfiles, typingUsers, getDisplayName } = useChat();
+  const { currentUser, selectedRoom, setSelectedRoom, userProfiles, typingUsers, getDisplayName, setChatRooms } = useChat();
 
   if (!currentUser) return null;
 
@@ -21,8 +21,6 @@ export default function ChatList({ rooms }: ChatListProps) {
       </div>
     );
   }
-
-  const { setChatRooms } = useChat();
 
   const handleRoomClick = async (room: any) => {
     setSelectedRoom(room.id);
